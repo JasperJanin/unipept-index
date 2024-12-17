@@ -1,0 +1,7 @@
+[package]
+name = "fm-index-builder"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+fm-index = "0.1"
