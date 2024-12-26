@@ -9,4 +9,4 @@ members = [ "bitarray",
     "sa-mappings",
     "sa-server",
     "fm-index-builder"
-]
+, "fm-index-benchmarking"]

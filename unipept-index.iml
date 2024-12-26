@@ -16,6 +16,8 @@
       <sourceFolder url="file://$MODULE_DIR$/sa-mappings/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/sa-server/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/text-compression/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/fm-index-builder/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/fm-index-benchmarking/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
     </content>
     <orderEntry type="inheritedJdk" />
