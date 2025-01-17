@@ -1,7 +1,7 @@
 use std::fs;
 use super::super::benchmarker::Benchmark;
 
-use fm_index::{BackwardSearchIndex, FMIndex};
+use fm_index::{BackwardSearchIndex, FMIndex, RLFMIndex};
 use fm_index::suffix_array::{NullSampler, SuffixOrderSampler, SuffixOrderSampledArray};
 use fm_index::converter::RangeConverter;
 use crate::benchmarker::DatasetOption;
@@ -9,13 +9,13 @@ use crate::benchmarker::DatasetOption::{Large, Small};
 
 use sa_mappings::proteins::Proteins;
 
-pub struct BuiltinFmIndex {
-    index: Option<FMIndex<u8, RangeConverter<u8>, SuffixOrderSampledArray>>,
+pub struct BuiltinWaveletFmIndex {
+    index: Option<RLFMIndex<u8, RangeConverter<u8>, SuffixOrderSampledArray>>,
     sa_sampling: usize,
     optimize_alphabet: bool,
 }
 
-impl BuiltinFmIndex {
+impl BuiltinWaveletFmIndex {
     pub fn new(sa_sampling: usize, optimize_alphabet: bool) -> Self {
         Self { index: None, optimize_alphabet, sa_sampling }
     }
@@ -51,7 +51,7 @@ impl BuiltinFmIndex {
     }
 }
 
-impl Benchmark for BuiltinFmIndex {
+impl Benchmark for BuiltinWaveletFmIndex {
 
     fn build_index(&mut self, dataset_option: &DatasetOption) {
         let filepath = match dataset_option {
@@ -73,7 +73,7 @@ impl Benchmark for BuiltinFmIndex {
         //         x.clone()
         //     })
         //     .collect::<Vec<u8>>();
-        
+
         let text = Proteins::try_from_database_file_uncompressed(filepath).unwrap()
             .into_iter()
             .map(|x| if self.optimize_alphabet { match x {
@@ -85,7 +85,7 @@ impl Benchmark for BuiltinFmIndex {
                 x.clone()
             })
             .collect::<Vec<u8>>();
-        
+
         // for i in 0..500 {
         //     println!("{} - {}: {}", i, text[i], text[i] as char);
         // }
@@ -99,7 +99,7 @@ impl Benchmark for BuiltinFmIndex {
         // let converter = RangeConverter::new(b'\t', b'~');
 
         let sampler = SuffixOrderSampler::new().level(self.sa_sampling);
-        self.index = Some(FMIndex::new(text, converter, sampler));
+        self.index = Some(RLFMIndex::new(text, converter, sampler));
     }
 
     fn input_length(&self) -> u64 {
@@ -119,7 +119,7 @@ impl Benchmark for BuiltinFmIndex {
     }
 
     fn get_name(&self) -> String {
-        format!("Built-in FM Index with{} alphabet optimization, SA sampling {}",
+        format!("Built-in Run-length encoded FM Index with{} alphabet optimization, SA sampling {}",
                 if self.optimize_alphabet {""} else {"out"}, self.sa_sampling)
     }
 }

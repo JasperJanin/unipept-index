@@ -16,7 +16,7 @@ pub struct BenchmarkResult {
 }
 
 #[derive(Debug)]
-struct PatternCollection {
+pub struct PatternCollection {
     name: String,
     patterns: Vec<String>,
 }
@@ -25,7 +25,7 @@ struct PatternCollection {
 pub struct IndexBenchmark {
     index: String,
     input_length: u64,
-    index_mb: u64,
+    index_bytes: u64,
     build_t: f64,
     runs: Vec<BenchmarkResult>,
 }
@@ -40,11 +40,11 @@ pub trait Benchmark {
     fn input_length(&self) -> u64;
     fn memory_used(&self) -> u64;
     fn count_occurrences(&self, text: &str) -> u64;
-    fn retrieve_matches(&self, text: &str) -> Vec<String>;
+    fn retrieve_match_positions(&self, text: &str) -> Vec<u64>;
     fn get_name(&self) -> String;
 }
 
-fn read_benchmark_files(benchmark_dir: &str) -> Vec<PatternCollection> {
+pub fn read_benchmark_files(benchmark_dir: &str) -> Vec<PatternCollection> {
     let mut out = Vec::new();
 
     let mut paths: Vec<PathBuf> = fs::read_dir(benchmark_dir).unwrap()
@@ -53,7 +53,7 @@ fn read_benchmark_files(benchmark_dir: &str) -> Vec<PatternCollection> {
     paths.sort();
 
     for filepath in paths {
-        if filepath.is_file() && filepath.extension().unwrap() != "zip" {
+        if filepath.is_file() && filepath.extension().unwrap() == "txt" {
             let file = File::open(&filepath).expect("impossible: file was checked by program");
             let buf = BufReader::new(file);
             let content = buf.lines()
@@ -70,6 +70,9 @@ fn read_benchmark_files(benchmark_dir: &str) -> Vec<PatternCollection> {
 
 fn run_benchmark(benchmark: &mut dyn Benchmark, input_patterns: &Vec<PatternCollection>, dataset_option: &DatasetOption) -> IndexBenchmark {
 
+
+    println!("Building index: {}", benchmark.get_name());
+    
     // time building index
     let now = Instant::now();
     benchmark.build_index(dataset_option);
@@ -78,6 +81,9 @@ fn run_benchmark(benchmark: &mut dyn Benchmark, input_patterns: &Vec<PatternColl
     let mut runs = Vec::new();
 
     for collection in input_patterns {
+        
+        println!("Querying index from file: {}", collection.name);
+        
         let start_count = Instant::now();
 
         let mut match_count = 0;
@@ -88,16 +94,10 @@ fn run_benchmark(benchmark: &mut dyn Benchmark, input_patterns: &Vec<PatternColl
 
         let mut match_count_retrieve = 0;
         let start_retrieve = Instant::now();
-        let mut i = 0;
         for s in collection.patterns.iter() {
-            if i % 500 == 0 {
-                println!("{}", i);
-            }
-            i += 1;
-            match_count_retrieve += benchmark.retrieve_matches(s.as_str()).len() as u64;
+            match_count_retrieve += benchmark.retrieve_match_positions(s.as_str()).len() as u64;
         }
         let t_retrieve = start_retrieve.elapsed().as_secs_f64();
-        println!("HEY");
 
         if match_count != match_count_retrieve {
             println!("Match mismatch")
@@ -116,31 +116,31 @@ fn run_benchmark(benchmark: &mut dyn Benchmark, input_patterns: &Vec<PatternColl
         index: benchmark.get_name(),
         build_t,
         input_length: benchmark.input_length(),
-        index_mb: benchmark.memory_used(),
+        index_bytes: benchmark.memory_used(),
         runs,
     }
 }
 
-pub fn run_single_benchmark(benchmark: &mut dyn Benchmark, benchmark_dir: &str, dataset_option: &DatasetOption) -> IndexBenchmark {
-
-    // load benchmarks
-    let benchmark_strings = read_benchmark_files(benchmark_dir);
-
-    run_benchmark(benchmark, &benchmark_strings, dataset_option)
+pub fn run_single_benchmark(benchmark: &mut dyn Benchmark, index_content: &Vec<PatternCollection>, dataset_option: &DatasetOption) -> IndexBenchmark {
+    
+    run_benchmark(benchmark, index_content, dataset_option)
 
 }
 
 pub fn run_all_benchmarks(benchmark_dir: &str, dataset_option: &DatasetOption) -> Vec<IndexBenchmark> {
     let mut results = Vec::new();
+    
+    // load benchmarks
+    let benchmark_strings = read_benchmark_files(benchmark_dir);
 
-    let mut bm = BuiltinFmIndex::new(1);
-    results.push(run_single_benchmark(&mut bm, benchmark_dir, dataset_option));
+    let mut bm = BuiltinFmIndex::new(1, false);
+    results.push(run_single_benchmark(&mut bm, &benchmark_strings, dataset_option));
 
-    let mut bm = BuiltinFmIndex::new(32);
-    results.push(run_single_benchmark(&mut bm, benchmark_dir, dataset_option));
+    let mut bm = BuiltinFmIndex::new(32, false);
+    results.push(run_single_benchmark(&mut bm, &benchmark_strings, dataset_option));
 
-    let mut bm = BuiltinFmIndex::new(128);
-    results.push(run_single_benchmark(&mut bm, benchmark_dir, dataset_option));
+    let mut bm = BuiltinFmIndex::new(128, false);
+    results.push(run_single_benchmark(&mut bm, &benchmark_strings, dataset_option));
 
 
     results
