@@ -1,9 +1,13 @@
+use std::error::Error;
 use std::time::{Instant, SystemTime};
 use std::fs;
 use std::fs::{DirEntry, File};
 use std::io::{BufRead, BufReader};
 use std::ops::Index;
+use bytelines::ByteLines;
 use std::path::PathBuf;
+use std::str::from_utf8;
+use sa_mappings::proteins::{SEPARATION_CHARACTER, TERMINATION_CHARACTER};
 use super::index_instances::builtin_fm_index::{BuiltinFmIndex};
 
 #[derive(Debug)]
@@ -31,12 +35,41 @@ pub struct IndexBenchmark {
 }
 
 pub enum DatasetOption {
-    Small,
-    Large,
+    Tiny,
+    SwissProt,
+    Uniprot10M,
+}
+
+pub fn try_from_database_file_uncompressed_with_length(database_file: &str, max_length: usize) -> Result<Vec<u8>, Box<dyn Error>> {
+    let mut input_string: String = String::new();
+
+    let file = File::open(database_file)?;
+
+    // Read the lines as bytes, since the input string is not guaranteed to be utf8
+    // because of the encoded functional annotations
+    let mut lines = ByteLines::new(BufReader::new(file));
+
+    while let Some(Ok(line)) = lines.next()  {
+        let mut fields = line.split(|b| *b == b'\t');
+
+        // only get the taxon id and sequence from each line, we don't need the other parts
+        let sequence = from_utf8(fields.nth(6).unwrap())?;
+
+        input_string.push_str(&sequence.to_uppercase());
+        input_string.push(SEPARATION_CHARACTER.into());
+        if max_length != 0 && input_string.len() > max_length {break}
+    }
+
+    input_string.pop();
+    input_string.push(TERMINATION_CHARACTER.into());
+
+    input_string.shrink_to_fit();
+    Ok(input_string.into_bytes())
 }
 
 pub trait Benchmark {
     fn build_index(&mut self, dataset_option: &DatasetOption);
+    
     fn input_length(&self) -> u64;
     fn memory_used(&self) -> u64;
     fn count_occurrences(&self, text: &str) -> u64;
@@ -71,7 +104,7 @@ pub fn read_benchmark_files(benchmark_dir: &str) -> Vec<PatternCollection> {
 fn run_benchmark(benchmark: &mut dyn Benchmark, input_patterns: &Vec<PatternCollection>, dataset_option: &DatasetOption) -> IndexBenchmark {
 
 
-    println!("Building index: {}", benchmark.get_name());
+    eprintln!("Building index: {}", benchmark.get_name());
     
     // time building index
     let now = Instant::now();
@@ -82,7 +115,7 @@ fn run_benchmark(benchmark: &mut dyn Benchmark, input_patterns: &Vec<PatternColl
 
     for collection in input_patterns {
         
-        println!("Querying index from file: {}", collection.name);
+        eprintln!("Querying index from file: {}", collection.name);
         
         let start_count = Instant::now();
 
@@ -133,13 +166,13 @@ pub fn run_all_benchmarks(benchmark_dir: &str, dataset_option: &DatasetOption) -
     // load benchmarks
     let benchmark_strings = read_benchmark_files(benchmark_dir);
 
-    let mut bm = BuiltinFmIndex::new(1, false);
+    let mut bm = BuiltinFmIndex::new(1, false, 0);
     results.push(run_single_benchmark(&mut bm, &benchmark_strings, dataset_option));
 
-    let mut bm = BuiltinFmIndex::new(32, false);
+    let mut bm = BuiltinFmIndex::new(32, false, 0);
     results.push(run_single_benchmark(&mut bm, &benchmark_strings, dataset_option));
 
-    let mut bm = BuiltinFmIndex::new(128, false);
+    let mut bm = BuiltinFmIndex::new(128, false, 0);
     results.push(run_single_benchmark(&mut bm, &benchmark_strings, dataset_option));
 
 

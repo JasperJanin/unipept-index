@@ -6,3 +6,4 @@ edition = "2021"
 [dependencies]
 fm-index = "0.1"
 sa-mappings = { path = "../sa-mappings" }
+bytelines = "2.5.0"
