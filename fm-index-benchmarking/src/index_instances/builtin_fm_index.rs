@@ -1,4 +1,3 @@
-use std::fs;
 use super::super::benchmarker::Benchmark;
 
 use fm_index::{BackwardSearchIndex, FMIndex};

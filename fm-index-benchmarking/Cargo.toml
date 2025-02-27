@@ -4,6 +4,12 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-fm-index = "0.1"
+fm-index = "0.2.0"
 sa-mappings = { path = "../sa-mappings" }
 bytelines = "2.5.0"
+
+sa-index = { path = "../sa-index" }
+sa-compression = { path = "../sa-compression" }
+serde = { version = "1.0.197", features = ["derive"] }
+postcard = { version = "1.1.1", features = ["alloc"] }
+flate2 = "1.1.0"

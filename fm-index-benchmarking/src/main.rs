@@ -1,37 +1,24 @@
-use fm_index_benchmarking::benchmarker::{read_benchmark_files, run_all_benchmarks, run_single_benchmark, DatasetOption};
-use fm_index_benchmarking::index_instances::builtin_fm_index::BuiltinFmIndex;
-use fm_index_benchmarking::index_instances::builtin_wavelet_fm::BuiltinWaveletFmIndex;
+use fm_index::converter::RangeConverter;
+use fm_index::suffix_array::SuffixOrderSampler;
+use fm_index::{BackwardSearchIndex, FMIndex};
+use fm_index_benchmarking::benchmarker::try_from_database_file_uncompressed_with_length;
+use fm_index_benchmarking::{load_index_postcard, save_index_postcard};
 
 fn main() {
-
-    // let r = run_all_benchmarks("benchmark_patterns/", &DatasetOption::Large);
+    let text = try_from_database_file_uncompressed_with_length("unipept-index-data/proteins.tsv", 0)
+        .unwrap()
+        .into_iter()
+        .map(|x| match x {
+            b'-' => b'@',
+            b'$' => b'@',
+            _ => x.clone(),
+        })
+        .collect::<Vec<u8>>();
+    let converter = RangeConverter::new(b'@', b'Z');
+    let sampler = SuffixOrderSampler::new().level(4);
+    let index = FMIndex::new(text, converter, sampler);
+    save_index_postcard(&index, "sortofbigindex.postcard");
     
-    let benchmark_dir = "benchmark_patterns/";
-    // load benchmarks
-    let benchmark_strings = read_benchmark_files(benchmark_dir);
-    let dataset_option = &DatasetOption::Uniprot10M;
-
-    let mut r = Vec::new();
-    
-    let mut length = 4096;
-    
-    while length < 1000000000 {
-        
-        for sampling in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16] {
-            let mut bm = BuiltinFmIndex::new(sampling, true, length);
-            r.push(run_single_benchmark(&mut bm, &benchmark_strings, dataset_option));
-            
-            println!("{:#?}", r.last());
-            
-            
-            let mut bm = BuiltinWaveletFmIndex::new(sampling, true, length);
-            r.push(run_single_benchmark(&mut bm, &benchmark_strings, dataset_option));
-
-            println!("{:#?}", r.last());
-        }
-        
-        length <<= 1;
-    }
-
-    // println!("{r:#?}");
+    let index = load_index_postcard("sortofbigindex.postcard");
+    println!("{}", index.search_backward("SVAF").count());
 }

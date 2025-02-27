@@ -1,8 +1,7 @@
-use std::fs;
 use super::super::benchmarker::Benchmark;
 
-use fm_index::{BackwardSearchIndex, FMIndex, RLFMIndex};
-use fm_index::suffix_array::{NullSampler, SuffixOrderSampler, SuffixOrderSampledArray};
+use fm_index::{BackwardSearchIndex, RLFMIndex};
+use fm_index::suffix_array::{SuffixOrderSampler, SuffixOrderSampledArray};
 use fm_index::converter::RangeConverter;
 use crate::benchmarker::{try_from_database_file_uncompressed_with_length, DatasetOption};
 use crate::benchmarker::DatasetOption::{Tiny, SwissProt, Uniprot10M};
