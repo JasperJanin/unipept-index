@@ -18,6 +18,10 @@
       <sourceFolder url="file://$MODULE_DIR$/text-compression/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/fm-index-builder/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/fm-index-benchmarking/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/fm-index/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/fm-index/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/fm-index/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/fm-searcher/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
     </content>
     <orderEntry type="inheritedJdk" />

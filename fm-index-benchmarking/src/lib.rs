@@ -22,7 +22,7 @@ use std::io::{BufReader, Read, Write};
 pub mod benchmarker;
 pub mod index_instances;
 
-pub fn get_easy_fm_index() -> FMIndex<u8, RangeConverter<u8>, SuffixOrderSampledArray> {
+pub fn generate_easy_fm_index() -> FMIndex<u8, RangeConverter<u8>, SuffixOrderSampledArray> {
     let text = try_from_database_file_uncompressed_with_length("unipept-index-data/proteins.tsv", 0)
         .unwrap()
         .into_iter()
@@ -37,6 +37,12 @@ pub fn get_easy_fm_index() -> FMIndex<u8, RangeConverter<u8>, SuffixOrderSampled
     let sampler = SuffixOrderSampler::new().level(4);
     FMIndex::new(text, converter, sampler)
 }
+
+pub fn load_easy_fm_index() -> FMIndex<u8, RangeConverter<u8>, SuffixOrderSampledArray> {
+    load_index_postcard("swissprot.postcard")
+}
+
+
 pub fn eprint_and_exit(err: &str) -> ! {
     eprintln!("{}", err);
     std::process::exit(1);
@@ -86,7 +92,7 @@ pub fn test_correctness() {
             })
             .collect()
     }
-    let fm_index = get_easy_fm_index();
+    let fm_index = generate_easy_fm_index();
     let sa_searcher = get_easy_sa_index();
 
     let patterns = read_benchmark_files("sihumi");

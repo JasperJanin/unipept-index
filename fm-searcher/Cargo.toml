@@ -1,0 +1,9 @@
+[package]
+name = "fm-searcher"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+fm-index-benchmarking = { path = "../fm-index-benchmarking" }
+fm-index = { path = "../fm-index"}
+#fm-index = "0.2.0"
