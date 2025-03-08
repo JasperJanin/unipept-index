@@ -7,7 +7,7 @@ use fm_index_benchmarking::{load_index_postcard, save_index_postcard};
 fn main() {
     println!("Starting builder...");
     println!("Loading database...");
-    let text = try_from_database_file_uncompressed_with_length("unipept-index-data/proteins.tsv", 0)
+    let text = try_from_database_file_uncompressed_with_length("unipept-index-data/proteins.tsv", 0, 2)
         .unwrap()
         .into_iter()
         .map(|x| match x {

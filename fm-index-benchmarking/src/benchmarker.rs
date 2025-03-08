@@ -42,6 +42,7 @@ pub enum DatasetOption {
 pub fn try_from_database_file_uncompressed_with_length(
     database_file: &str,
     max_length: usize,
+    tsv_field: usize
 ) -> Result<Vec<u8>, Box<dyn Error>> {
     let mut input_string: String = String::new();
 
@@ -55,7 +56,7 @@ pub fn try_from_database_file_uncompressed_with_length(
         let mut fields = line.split(|b| *b == b'\t');
 
         // only get the taxon id and sequence from each line, we don't need the other parts
-        let sequence = from_utf8(fields.nth(2).unwrap())?;
+        let sequence = from_utf8(fields.nth(tsv_field).unwrap())?;
 
         input_string.push_str(&sequence.to_uppercase());
         input_string.push(SEPARATION_CHARACTER.into());
@@ -163,19 +164,19 @@ pub fn run_single_benchmark(
     run_benchmark(benchmark, index_content, dataset_option)
 }
 
-pub fn run_all_benchmarks(benchmark_dir: &str, dataset_option: &DatasetOption) -> Vec<IndexBenchmark> {
+pub fn run_all_benchmarks(benchmark_dir: &str, dataset_option: &DatasetOption, tsv_index: usize) -> Vec<IndexBenchmark> {
     let mut results = Vec::new();
 
     // load benchmarks
     let benchmark_strings = read_benchmark_files(benchmark_dir);
 
-    let mut bm = BuiltinFmIndex::new(1, false, 0);
+    let mut bm = BuiltinFmIndex::new(1, false, 0, tsv_index);
     results.push(run_single_benchmark(&mut bm, &benchmark_strings, dataset_option));
 
-    let mut bm = BuiltinFmIndex::new(32, false, 0);
+    let mut bm = BuiltinFmIndex::new(32, false, 0, tsv_index);
     results.push(run_single_benchmark(&mut bm, &benchmark_strings, dataset_option));
 
-    let mut bm = BuiltinFmIndex::new(128, false, 0);
+    let mut bm = BuiltinFmIndex::new(128, false, 0, tsv_index);
     results.push(run_single_benchmark(&mut bm, &benchmark_strings, dataset_option));
 
     results

@@ -2,7 +2,6 @@ use crate::benchmarker::{
     read_benchmark_files, run_single_benchmark, try_from_database_file_uncompressed_with_length, DatasetOption,
 };
 use crate::index_instances::builtin_fm_index::BuiltinFmIndex;
-use crate::index_instances::builtin_wavelet_fm::BuiltinWaveletFmIndex;
 use fm_index::converter::RangeConverter;
 use fm_index::suffix_array::{SuffixOrderSampledArray, SuffixOrderSampler};
 use fm_index::{BackwardSearchIndex, FMIndex};
@@ -22,8 +21,8 @@ use std::io::{BufReader, Read, Write};
 pub mod benchmarker;
 pub mod index_instances;
 
-pub fn generate_easy_fm_index() -> FMIndex<u8, RangeConverter<u8>, SuffixOrderSampledArray> {
-    let text = try_from_database_file_uncompressed_with_length("unipept-index-data/proteins.tsv", 0)
+pub fn generate_fm_index(inputfile: &str, max_length: usize, tsv_field: usize) -> FMIndex<u8, RangeConverter<u8>, SuffixOrderSampledArray> {
+    let text = try_from_database_file_uncompressed_with_length(inputfile, max_length, tsv_field)
         .unwrap()
         .into_iter()
         .map(|x| match x {
@@ -36,6 +35,10 @@ pub fn generate_easy_fm_index() -> FMIndex<u8, RangeConverter<u8>, SuffixOrderSa
     let converter = RangeConverter::new(b'@', b'Z');
     let sampler = SuffixOrderSampler::new().level(4);
     FMIndex::new(text, converter, sampler)
+}
+
+pub fn generate_easy_fm_index() -> FMIndex<u8, RangeConverter<u8>, SuffixOrderSampledArray> {
+    generate_fm_index("unipept-index-data/proteins.tsv", 0, 2)
 }
 
 pub fn load_easy_fm_index() -> FMIndex<u8, RangeConverter<u8>, SuffixOrderSampledArray> {
@@ -152,12 +155,7 @@ pub fn test_memory_usage() {
 
     while length < 1000000000 {
         for sampling in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16] {
-            let mut bm = BuiltinFmIndex::new(sampling, true, length);
-            r.push(run_single_benchmark(&mut bm, &benchmark_strings, dataset_option));
-
-            println!("{:#?}", r.last());
-
-            let mut bm = BuiltinWaveletFmIndex::new(sampling, true, length);
+            let mut bm = BuiltinFmIndex::new(sampling, true, length, 6);
             r.push(run_single_benchmark(&mut bm, &benchmark_strings, dataset_option));
 
             println!("{:#?}", r.last());

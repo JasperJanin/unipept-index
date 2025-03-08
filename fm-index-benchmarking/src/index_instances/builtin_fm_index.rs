@@ -11,11 +11,12 @@ pub struct BuiltinFmIndex {
     input_length: usize,
     sa_sampling: usize,
     optimize_alphabet: bool,
+    tsv_index: usize,
 }
 
 impl BuiltinFmIndex {
-    pub fn new(sa_sampling: usize, optimize_alphabet: bool, input_length: usize) -> Self {
-        Self { index: None, optimize_alphabet, sa_sampling, input_length }
+    pub fn new(sa_sampling: usize, optimize_alphabet: bool, input_length: usize, tsv_index: usize) -> Self {
+        Self { index: None, optimize_alphabet, sa_sampling, input_length, tsv_index }
     }
 
     fn internal_to_string(&self, index_rep: &str) -> String {
@@ -58,7 +59,7 @@ impl Benchmark for BuiltinFmIndex {
             Uniprot10M => "unipept-index-data/uniprot_10M.tsv",
         };
         
-        let text = try_from_database_file_uncompressed_with_length(filepath, self.input_length).unwrap()
+        let text = try_from_database_file_uncompressed_with_length(filepath, self.input_length, self.tsv_index).unwrap()
             .into_iter()
             .map(|x| if self.optimize_alphabet { match x {
                 b'-' => b'@',
