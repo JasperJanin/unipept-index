@@ -4,4 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-fm-index = "0.1"
+clap = { version = "4.5.31", features = ["derive"] }
+fm-index = { path = "../fm-index"}
+fm-index-benchmarking = { path = "../fm-index-benchmarking" }
