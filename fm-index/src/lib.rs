@@ -114,13 +114,11 @@ pub mod suffix_array;
 mod character;
 mod fm_index;
 mod iter;
-mod rlfmi;
 mod sais;
 pub mod search;
 mod util;
 
 pub use crate::fm_index::FMIndex;
-pub use crate::rlfmi::RLFMIndex;
 
 pub use iter::{BackwardIterableIndex, ForwardIterableIndex};
 pub use search::BackwardSearchIndex;

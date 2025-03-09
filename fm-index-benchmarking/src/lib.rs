@@ -21,6 +21,18 @@ use std::io::{BufReader, Read, Write};
 pub mod benchmarker;
 pub mod index_instances;
 
+pub fn generate_fm_index_from_bytes_with_known_bound(text: Vec<u8>, min_char: u8, max_char: u8) -> FMIndex<u8, RangeConverter<u8>, SuffixOrderSampledArray> {
+    let converter = RangeConverter::new(min_char, max_char);
+    let sampler = SuffixOrderSampler::new().level(4);
+    FMIndex::new(text, converter, sampler)
+}
+
+pub fn generate_fm_index_from_bytes_without_known_bound(text: Vec<u8>) -> FMIndex<u8, RangeConverter<u8>, SuffixOrderSampledArray> {
+    let min = *text.iter().min().unwrap();
+    let max = *text.iter().max().unwrap();
+    generate_fm_index_from_bytes_with_known_bound(text, min, max)
+}
+
 pub fn generate_fm_index(inputfile: &str, max_length: usize, tsv_field: usize) -> FMIndex<u8, RangeConverter<u8>, SuffixOrderSampledArray> {
     let text = try_from_database_file_uncompressed_with_length(inputfile, max_length, tsv_field)
         .unwrap()
@@ -31,10 +43,21 @@ pub fn generate_fm_index(inputfile: &str, max_length: usize, tsv_field: usize) -
             _ => x.clone(),
         })
         .collect::<Vec<u8>>();
+    generate_fm_index_from_bytes_with_known_bound(text, b'@', b'Z')
+}
 
-    let converter = RangeConverter::new(b'@', b'Z');
-    let sampler = SuffixOrderSampler::new().level(4);
-    FMIndex::new(text, converter, sampler)
+pub fn generate_reverse_fm_index(inputfile: &str, max_length: usize, tsv_field: usize) -> FMIndex<u8, RangeConverter<u8>, SuffixOrderSampledArray> {
+    let text = try_from_database_file_uncompressed_with_length(inputfile, max_length, tsv_field)
+        .unwrap()
+        .into_iter()
+        .rev()
+        .map(|x| match x {
+            b'-' => b'@',
+            b'$' => b'@',
+            _ => x.clone(),
+        })
+        .collect::<Vec<u8>>();
+    generate_fm_index_from_bytes_with_known_bound(text, b'@', b'Z')
 }
 
 pub fn generate_easy_fm_index() -> FMIndex<u8, RangeConverter<u8>, SuffixOrderSampledArray> {
@@ -118,12 +141,6 @@ pub fn test_correctness() {
                 SearchAllSuffixesResult::MaxMatches(r) => r,
                 SearchAllSuffixesResult::NoMatches => Vec::new(),
             };
-
-            if sa_r.len() > 0 {
-                println!("{:?}", sa_r);
-                println!("{:?}", fm_r);
-                break;
-            }
 
             let sa_r = sa_r.into_iter().map(|n| n as _).collect();
 
