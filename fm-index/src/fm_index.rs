@@ -11,9 +11,9 @@ use vers_vecs::WaveletMatrix;
 
 #[derive(Serialize, Deserialize)]
 pub struct FMIndex<T, C, S> {
-    bw: WaveletMatrix,
+    pub bw: WaveletMatrix,
     cs: Vec<u64>,
-    converter: C,
+    pub converter: C,
     suffix_array: S,
     _t: std::marker::PhantomData<T>,
 }
