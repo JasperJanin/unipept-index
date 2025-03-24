@@ -1,7 +1,7 @@
-use fm_index::converter::{Converter, RangeConverter};
-use fm_index::{BackwardIterableIndex, BackwardSearchIndex, FMIndex};
-use fm_index::suffix_array::{IndexWithSA, SuffixOrderSampledArray};
 use crate::bd_index::BidirectionalIndex;
+use fm_index::converter::{Converter, RangeConverter};
+use fm_index::suffix_array::{IndexWithSA, SuffixOrderSampledArray};
+use fm_index::{BackwardIterableIndex, FMIndex};
 
 pub struct BDFMSearch<'a> {
     pub index: &'a BidirectionalIndex,
@@ -24,8 +24,14 @@ impl<'a> BDFMSearch<'a> {
         }
     }
 
-    fn get_x(&self, c: u8, s: u64, e: u64, index: &FMIndex<u8, RangeConverter<u8>, SuffixOrderSampledArray>, forward: bool) -> u64 {
-
+    fn get_x(
+        &self,
+        c: u8,
+        s: u64,
+        e: u64,
+        index: &FMIndex<u8, RangeConverter<u8>, SuffixOrderSampledArray>,
+        forward: bool,
+    ) -> u64 {
         let mut x = 0;
 
         if ('@' as u8) > c || ('Z' as u8) < c {
@@ -34,84 +40,86 @@ impl<'a> BDFMSearch<'a> {
 
         let mut c_iter = 0;
         while index.converter.convert_inv(c_iter) < c {
-            println!("{}", index.converter.convert_inv(c_iter));
             let rank_s = index.bw.rank_u64_unchecked(s as usize, c_iter.into());
             let rank_e = index.bw.rank_u64_unchecked(e as usize, c_iter.into());
             x += rank_e - rank_s;
-
             c_iter += 1;
         }
-
         x as u64
     }
 
     pub fn search_char(&self, char: u8, forward: bool) -> Self {
-        let mut s = if !forward { self.backward_s } else {self.forward_s};
-        let mut e = if !forward { self.backward_e } else {self.forward_e};
-        let mut other_s = if forward { self.backward_s } else {self.forward_s};
-        let mut other_e = if forward { self.backward_e } else {self.forward_e};
+        let mut s = if !forward { self.backward_s } else { self.forward_s };
+        let mut e = if !forward { self.backward_e } else { self.forward_e };
+        let mut other_s = if forward { self.backward_s } else { self.forward_s };
 
-        let index = if !forward {&self.index.normal_index} else {&self.index.reverse_index};
+        let index = if !forward { &self.index.normal_index } else { &self.index.reverse_index };
 
         other_s += self.get_x(char, s, e, index, forward);
         s = index.lf_map2(char, s);
         e = index.lf_map2(char, e);
-        other_e = other_s + (e - s);
-        
+        let other_e = other_s + (e - s);
+
         let mut pattern = Vec::new();
         if forward {
-            pattern.push(char);
             pattern.extend_from_slice(self.pattern.as_slice());
+            pattern.push(char);
         } else {
-            pattern.extend_from_slice(self.pattern.as_slice());
             pattern.push(char);
+            pattern.extend_from_slice(self.pattern.as_slice());
         }
 
         BDFMSearch {
             index: self.index,
-            backward_s: if !forward {s} else {other_s},
-            backward_e: if !forward {e} else {other_e},
-            forward_s: if forward {s} else {other_s},
-            forward_e: if forward {e} else {other_e},
+            backward_s: if !forward { s } else { other_s },
+            backward_e: if !forward { e } else { other_e },
+            forward_s: if forward { s } else { other_s },
+            forward_e: if forward { e } else { other_e },
             pattern,
         }
     }
 
     pub fn search(&self, pattern: &str, forward: bool) -> Self {
-        let mut s = if !forward { self.backward_s } else {self.forward_s};
-        let mut e = if !forward { self.backward_e } else {self.forward_e};
-        let mut other_s = if forward { self.backward_s } else {self.forward_s};
-        let mut other_e = if forward { self.backward_e } else {self.forward_e};
+        let mut s = if !forward { self.backward_s } else { self.forward_s };
+        let mut e = if !forward { self.backward_e } else { self.forward_e };
+        let mut other_s = if forward { self.backward_s } else { self.forward_s };
+        let mut other_e = if forward { self.backward_e } else { self.forward_e };
         let mut pattern: Vec<u8> = pattern.bytes().collect();
-        if !forward {pattern.reverse()};
+        if !forward {
+            pattern.reverse()
+        };
 
-        let index = if !forward {&self.index.normal_index} else {&self.index.reverse_index};
+        let index = if !forward { &self.index.normal_index } else { &self.index.reverse_index };
 
         for &c in pattern.iter() {
             other_s += self.get_x(c, s, e, index, forward);
             s = index.lf_map2(c, s);
             e = index.lf_map2(c, e);
-            let search = index.search_backward("BC");
-            let other_search = self.index.reverse_index.search_backward("CB");
             other_e = other_s + (e - s);
             if s == e {
                 break;
             }
         }
 
-        pattern.extend_from_slice(&self.pattern);
-        if !forward {pattern.reverse()};
+        if !forward {
+            pattern.reverse();
+            pattern.extend_from_slice(&self.pattern);
+        } else {
+            let saved_pattern = pattern.clone();
+            pattern = self.pattern.clone();
+            pattern.extend_from_slice(&saved_pattern);
+        }
 
         BDFMSearch {
             index: self.index,
-            backward_s: if !forward {s} else {other_s},
-            backward_e: if !forward {e} else {other_e},
-            forward_s: if forward {s} else {other_s},
-            forward_e: if forward {e} else {other_e},
+            backward_s: if !forward { s } else { other_s },
+            backward_e: if !forward { e } else { other_e },
+            forward_s: if forward { s } else { other_s },
+            forward_e: if forward { e } else { other_e },
             pattern,
         }
     }
-    
+
     pub fn count(&self) -> u64 {
         self.backward_e - self.backward_s
     }

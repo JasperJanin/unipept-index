@@ -1,7 +1,9 @@
-use std::str;
-use std::string::ToString;
+use std::collections::HashSet;
 use crate::bd_index::BidirectionalIndex;
 use crate::search::BDFMSearch;
+use crate::search_scheme::SearchScheme;
+use std::str;
+use std::string::ToString;
 
 struct SearchStateEntry<'a> {
     search: BDFMSearch<'a>,
@@ -12,37 +14,10 @@ struct SearchStateEntry<'a> {
     remaining_string_slice: &'a str,
 }
 
-
-struct SearchSchemePass {
-    order: Vec<u32>,
-    lower: Vec<u32>,
-    upper: Vec<u32>,
-}
-
-struct SearchScheme {
-    runs: u32,
-    passes: Vec<SearchSchemePass>
-}
-
-impl SearchScheme {
-    pub fn new(dist: usize) -> Self {
-        // TODO
-        SearchScheme {
-            runs: 2,
-            passes: vec![
-                SearchSchemePass {
-                    order: vec![0, 1],
-                    lower: vec![0, 0],
-                    upper: vec![0, 1],
-                },
-                SearchSchemePass {
-                    order: vec![1, 0],
-                    lower: vec![0, 1],
-                    upper: vec![0, 1],
-                },
-            ]
-        }
-    }
+pub(crate) struct SearchSchemePass {
+    pub(crate) order: Vec<u32>,
+    pub(crate) lower: Vec<u32>,
+    pub(crate) upper: Vec<u32>,
 }
 
 pub struct ApproximateSearch<'a> {
@@ -50,141 +25,149 @@ pub struct ApproximateSearch<'a> {
     parts: &'a Vec<String>,
     pattern_length: usize,
     scheme_pass: &'a SearchSchemePass,
-    results: Vec<u64>,
+    results: HashSet<u64>,
     stack: Vec<SearchStateEntry<'a>>,
     max_stack_size: usize,
 }
 
 impl<'a> ApproximateSearch<'a> {
-    
-    const ALPHABET: &'static [u8] = "ACDEFGHIKLMNOPQRSTUVWY".as_bytes();
-    
-    pub fn search(index: &BidirectionalIndex, pattern: String, dist: usize, max_stack_size: usize) -> Vec<u64> {
+    // const ALPHABET: &'static [u8] = "ACDEFGHIKLMNOPQRSTUVWY".as_bytes();
+    const ALPHABET: &'static [u8] = "ABCDE".as_bytes(); // TODO verander naar echt alfabet ^
+
+    pub fn search(index: &BidirectionalIndex, pattern: String, dist: usize, max_stack_size: usize) -> HashSet<u64> {
         // TODO handle dist too big or too small
-    
-        let part_ct = dist + 1;
+
+        let scheme = SearchScheme::new(dist);
+
+        let part_ct = scheme.passes[0].order.len();
         let chars_per_part = pattern.len() / part_ct;
         let mut parts = Vec::new();
-        for i in 0..part_ct-1 {
-            parts.push(pattern[i*chars_per_part .. (i+1)*chars_per_part].to_string());
+        for i in 0..part_ct - 1 {
+            parts.push(pattern[i * chars_per_part..(i + 1) * chars_per_part].to_string());
         }
-        parts.push(pattern[(part_ct-1) * chars_per_part .. pattern.len()].to_string());
-        
-        let scheme = SearchScheme::new(dist);
-        
-        let mut results = Vec::new();
-        
-        for i in 0..scheme.runs {
-            let mut stack = Vec::new();
-            stack.push(SearchStateEntry {
-                search: BDFMSearch::new(&index),
-                errors: 0,
-                chars_taken: 0,
-                scheme_part_index: 0,
-                forward: false,
-                remaining_string_slice: parts[scheme.passes[i as usize].order[0] as usize].as_str()
-            });
-    
+        parts.push(pattern[(part_ct - 1) * chars_per_part..pattern.len()].to_string());
+
+        let mut results = HashSet::new();
+
+        for i in 0..scheme.pass_count {
             let mut search = ApproximateSearch {
                 index,
                 parts: &parts,
                 pattern_length: pattern.len(),
                 scheme_pass: &scheme.passes[i as usize],
-                results: Vec::new(),
-                stack,
+                results: HashSet::new(),
+                stack: Vec::new(),
                 max_stack_size,
             };
-    
+
+            search.stack.push(SearchStateEntry {
+                search: BDFMSearch::new(&index),
+                errors: 0,
+                chars_taken: 0,
+                scheme_part_index: 0,
+                forward: false,
+                remaining_string_slice: parts[scheme.passes[i as usize].order[0] as usize].as_str(),
+            });
+
             while search.stack.len() > 0 {
                 let state = search.stack.pop().unwrap();
-    
+
                 // check for total result
                 if state.chars_taken >= search.pattern_length {
-                    search.results.append(&mut state.search.locate());
+                    state.search.locate().iter().for_each(|r| { search.results.insert(*r); });
                     continue;
                 }
-    
+
                 search.extend_search(state);
             }
-            results.append(search.results.as_mut());
+            println!("Results after run {i}: {:?}", search.results);
+            search.results.iter().for_each(|r| { results.insert(*r); });
         }
 
         results
     }
-    
+
     fn extend_search(&mut self, mut state: SearchStateEntry<'a>) {
-        
-        let scheme_part_index = state.chars_taken / (self.pattern_length / self.parts.len());
-        
-        let permitted_mistakes = self.scheme_pass.upper[scheme_part_index];
-        
-        if state.remaining_string_slice.len() == 0 {
-            state.remaining_string_slice = self.parts[self.scheme_pass.order[scheme_part_index] as usize].as_str();
-            state.forward = self.scheme_pass.order[scheme_part_index] > self.scheme_pass.order[0];
+        if !state.forward && state.remaining_string_slice.len() > 0 {
+            print!("");
         }
-        
-        
+
+        if state.remaining_string_slice.len() == 0 {
+            state.scheme_part_index += 1;
+            state.remaining_string_slice =
+                self.parts[self.scheme_pass.order[state.scheme_part_index] as usize].as_str();
+            state.forward = self.scheme_pass.order[state.scheme_part_index] > self.scheme_pass.order[0];
+        }
+
+        let permitted_mistakes = self.scheme_pass.upper[state.scheme_part_index];
+
         let next_char = if state.forward {
             state.remaining_string_slice.bytes().last().unwrap()
         } else {
             state.remaining_string_slice.bytes().next().unwrap()
         };
-        // 
+        //
         //     // errors allowed
         if state.errors < permitted_mistakes as u8 {
-                for c in Self::ALPHABET { // todo check of `let search = state.search` kan
-                    let search = BDFMSearch {
-                        index: state.search.index,
-                        backward_s: state.search.backward_s,
-                        backward_e: state.search.backward_e,
-                        forward_s: state.search.forward_s,
-                        forward_e: state.search.forward_e,
-                        pattern: state.search.pattern.clone()
-                    };
-                    let search = search.search_char(*c, state.forward);
-                    
-                    if search.count() > 0 {
-                        // match/mismatch
-                        self.stack.push(SearchStateEntry {
-                            search: BDFMSearch {
-                                index: state.search.index,
-                                backward_s: state.search.backward_s,
-                                backward_e: state.search.backward_e,
-                                forward_s: state.search.forward_s,
-                                forward_e: state.search.forward_e,
-                                pattern: search.pattern.clone(),
-                            },
-                            errors: if *c == next_char { state.errors } else { state.errors + 1 },
-                            chars_taken: state.chars_taken + 1,
-                            scheme_part_index: state.scheme_part_index,
-                            forward: state.forward,
-                            remaining_string_slice: if !state.forward { &state.remaining_string_slice[1..] } else { &state.remaining_string_slice[..state.remaining_string_slice.len()-1] },
-                        });
+            for c in Self::ALPHABET {
+                let mut search = BDFMSearch {
+                    index: state.search.index,
+                    backward_s: state.search.backward_s,
+                    backward_e: state.search.backward_e,
+                    forward_s: state.search.forward_s,
+                    forward_e: state.search.forward_e,
+                    pattern: state.search.pattern.clone(),
+                };
+                search = search.search_char(*c, state.forward);
 
-                        
-                        // insertion
-                        self.stack.push(SearchStateEntry {
-                            search,
-                            errors: state.errors + 1,
-                            chars_taken: state.chars_taken,
-                            scheme_part_index: state.scheme_part_index,
-                            forward: state.forward,
-                            remaining_string_slice: state.remaining_string_slice,
-                        });
-                }}
-                
-                // deletion
-                let search = state.search.search_char(next_char, state.forward);
-                self.stack.push(SearchStateEntry {
-                    search,
-                    errors: state.errors + 1,
-                    chars_taken: state.chars_taken + 1,
-                    scheme_part_index,
-                    forward: false,
-                    remaining_string_slice: "",
-                });
+                if search.count() > 0 {
+                    // match/mismatch
+                    self.stack.push(SearchStateEntry {
+                        search: BDFMSearch {
+                            index: search.index,
+                            backward_s: search.backward_s,
+                            backward_e: search.backward_e,
+                            forward_s: search.forward_s,
+                            forward_e: search.forward_e,
+                            pattern: search.pattern.clone(),
+                        },
+                        errors: if *c == next_char { state.errors } else { state.errors + 1 },
+                        chars_taken: state.chars_taken + 1,
+                        scheme_part_index: state.scheme_part_index,
+                        forward: state.forward,
+                        remaining_string_slice: if state.forward {
+                            &state.remaining_string_slice[1..]
+                        } else {
+                            &state.remaining_string_slice[..state.remaining_string_slice.len() - 1]
+                        },
+                    });
+
+                    // insertion
+                    self.stack.push(SearchStateEntry {
+                        search,
+                        errors: state.errors + 1,
+                        chars_taken: state.chars_taken,
+                        scheme_part_index: state.scheme_part_index,
+                        forward: state.forward,
+                        remaining_string_slice: state.remaining_string_slice,
+                    });
+                }
+            }
+
+            // deletion
+            self.stack.push(SearchStateEntry {
+                search: state.search,
+                errors: state.errors + 1,
+                chars_taken: state.chars_taken + 1,
+                scheme_part_index: state.scheme_part_index,
+                forward: state.forward,
+                remaining_string_slice: if state.forward {
+                    &state.remaining_string_slice[1..]
+                } else {
+                    &state.remaining_string_slice[..state.remaining_string_slice.len() - 1]
+                },
+            });
         }
-                
         // errors not allowed
         else {
             let search = state.search.search(state.remaining_string_slice, state.forward);
@@ -194,16 +177,15 @@ impl<'a> ApproximateSearch<'a> {
                 state.remaining_string_slice = "";
                 self.stack.push(state);
             }
-       }
+        }
     }
 }
 
-pub fn searchscheme_test() -> Vec<u64> {
-
+pub fn searchscheme_test() -> HashSet<u64> {
     let index = BidirectionalIndex::load();
-    
+
     let search_term = "CBB".to_string();
-    
+
     let results = index.find_approximate_matches(search_term, 1);
     results
 }
