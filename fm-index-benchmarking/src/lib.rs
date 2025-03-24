@@ -43,6 +43,7 @@ pub fn generate_fm_index(inputfile: &str, max_length: usize, tsv_field: usize) -
             _ => x.clone(),
         })
         .collect::<Vec<u8>>();
+    println!("Text = {:?}", text);
     generate_fm_index_from_bytes_with_known_bound(text, b'@', b'Z')
 }
 
@@ -57,6 +58,7 @@ pub fn generate_reverse_fm_index(inputfile: &str, max_length: usize, tsv_field: 
             _ => x.clone(),
         })
         .collect::<Vec<u8>>();
+    println!("Text = {:?}", text);
     generate_fm_index_from_bytes_with_known_bound(text, b'@', b'Z')
 }
 
