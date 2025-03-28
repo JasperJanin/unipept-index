@@ -32,7 +32,7 @@ pub struct ApproximateSearch<'a> {
 
 impl<'a> ApproximateSearch<'a> {
     // const ALPHABET: &'static [u8] = "ACDEFGHIKLMNOPQRSTUVWY".as_bytes();
-    const ALPHABET: &'static [u8] = "ABCDE".as_bytes(); // TODO verander naar echt alfabet ^
+    const ALPHABET: &'static [u8] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".as_bytes(); // TODO verander naar echt alfabet ^
 
     pub fn search(index: &BidirectionalIndex, pattern: String, dist: usize, max_stack_size: usize) -> HashSet<u64> {
         // TODO handle dist too big or too small
@@ -101,13 +101,13 @@ impl<'a> ApproximateSearch<'a> {
 
         let permitted_mistakes = self.scheme_pass.upper[state.scheme_part_index];
 
-        let next_char = if state.forward {
-            state.remaining_string_slice.bytes().last().unwrap()
-        } else {
+        let next_char = if state.forward { // todo move within errors allowed
             state.remaining_string_slice.bytes().next().unwrap()
+        } else {
+            state.remaining_string_slice.bytes().last().unwrap()
         };
-        //
-        //     // errors allowed
+        
+        // errors allowed
         if state.errors < permitted_mistakes as u8 {
             for c in Self::ALPHABET {
                 let mut search = BDFMSearch {
