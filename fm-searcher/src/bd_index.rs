@@ -4,9 +4,7 @@ use crate::search::BDFMSearch;
 use fm_index::converter::RangeConverter;
 use fm_index::suffix_array::SuffixOrderSampledArray;
 use fm_index::FMIndex;
-use fm_index_benchmarking::{
-    generate_fm_index, generate_fm_index_from_bytes_without_known_bound, generate_reverse_fm_index,
-};
+use fm_index_benchmarking::{convert_alphabet, generate_fm_index, generate_fm_index_from_bytes_with_known_bound, generate_fm_index_from_bytes_without_known_bound, generate_reverse_fm_index};
 
 pub struct BidirectionalIndex {
     pub normal_index: FMIndex<u8, RangeConverter<u8>, SuffixOrderSampledArray>,
@@ -24,11 +22,26 @@ impl BidirectionalIndex {
             reverse_index: generate_fm_index_from_bytes_without_known_bound(rev),
         }
     }
-
-    pub fn load() -> Self {
+    
+    pub fn from_file_max_length(filename: &str, max_length: usize, tsv_field: usize) -> Self {
         BidirectionalIndex {
-            normal_index: generate_fm_index("unipept-index-data/searchschemetest.txt", 0, 0),
-            reverse_index: generate_reverse_fm_index("unipept-index-data/searchschemetest.txt", 0, 0),
+            normal_index: generate_fm_index(filename, max_length, tsv_field),
+            reverse_index: generate_reverse_fm_index(filename, max_length, tsv_field),
+        }
+    }
+    
+    pub fn from_file(filename: &str, tsv_field: usize) -> Self {
+        Self::from_file_max_length(filename, 0, tsv_field)
+    }
+
+    pub fn from_str(text: &str) -> Self {
+        
+        let text_normal = text.bytes().collect::<Vec<_>>();
+        let text_rev = text.bytes().rev().collect::<Vec<_>>();
+        
+        BidirectionalIndex {
+            normal_index: generate_fm_index_from_bytes_with_known_bound(convert_alphabet(text_normal), b'@', b'Z'),
+            reverse_index: generate_fm_index_from_bytes_with_known_bound(convert_alphabet(text_rev), b'@', b'Z')
         }
     }
 
@@ -36,11 +49,11 @@ impl BidirectionalIndex {
         BDFMSearch::new(self).search(pattern, forward)
     }
 
-    fn find_approximate_matches_config(&self, pattern: String, distance: usize, max_stack_size: usize) -> HashSet<u64> {
+    fn find_approximate_matches_config(&self, pattern: String, distance: usize, max_stack_size: usize) -> Vec<u64> {
         ApproximateSearch::search(self, pattern, distance, max_stack_size)
     }
 
-    pub fn find_approximate_matches(&self, pattern: String, distance: usize) -> HashSet<u64> {
+    pub fn find_approximate_matches(&self, pattern: String, distance: usize) -> Vec<u64> {
         self.find_approximate_matches_config(pattern, distance, Self::DEFAULT_STACK_SIZE)
     }
 }

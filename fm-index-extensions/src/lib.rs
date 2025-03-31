@@ -1,3 +1,4 @@
+use std::cmp::min;
 use crate::benchmarker::{
     read_benchmark_files, run_single_benchmark, try_from_database_file_uncompressed_with_length, DatasetOption,
 };
@@ -11,19 +12,20 @@ use sa_index::binary::load_suffix_array;
 use sa_index::sa_searcher::{SearchAllSuffixesResult, SparseSearcher};
 use sa_index::SuffixArray;
 use sa_mappings::proteins::Proteins;
-use serde::{Deserialize, Serialize};
 use std::error::Error;
 use std::fs::{read, File};
 use std::fs::write;
-use std::io::prelude::*;
-use std::io::{BufReader, Read, Write};
+use std::io::{BufReader, Read};
 
 pub mod benchmarker;
 pub mod index_instances;
 
 pub fn generate_fm_index_from_bytes_with_known_bound(text: Vec<u8>, min_char: u8, max_char: u8) -> FMIndex<u8, RangeConverter<u8>, SuffixOrderSampledArray> {
     let converter = RangeConverter::new(min_char, max_char);
-    let sampler = SuffixOrderSampler::new().level(4);
+    
+    let sampling_level = min(4, text.len() >> 10);
+    let sampler = SuffixOrderSampler::new().level(sampling_level);
+    
     FMIndex::new(text, converter, sampler)
 }
 
@@ -33,32 +35,37 @@ pub fn generate_fm_index_from_bytes_without_known_bound(text: Vec<u8>) -> FMInde
     generate_fm_index_from_bytes_with_known_bound(text, min, max)
 }
 
-pub fn generate_fm_index(inputfile: &str, max_length: usize, tsv_field: usize) -> FMIndex<u8, RangeConverter<u8>, SuffixOrderSampledArray> {
-    let text = try_from_database_file_uncompressed_with_length(inputfile, max_length, tsv_field)
-        .unwrap()
+pub fn convert_alphabet(text: Vec<u8>) -> Vec<u8> {
+    text
         .into_iter()
         .map(|x| match x {
             b'-' => b'@',
             b'$' => b'@',
             _ => x.clone(),
         })
-        .collect::<Vec<u8>>();
-    println!("Text = {:?}", text);
+        .collect()
+}
+
+pub fn convert_alphabet_and_reverse(text: Vec<u8>) -> Vec<u8> {
+    text
+        .into_iter()
+        .map(|x| match x {
+            b'-' => b'@',
+            b'$' => b'@',
+            _ => x.clone(),
+        })
+        .rev()
+        .collect()
+}
+
+pub fn generate_fm_index(inputfile: &str, max_length: usize, tsv_field: usize) -> FMIndex<u8, RangeConverter<u8>, SuffixOrderSampledArray> {
+    let text = convert_alphabet(try_from_database_file_uncompressed_with_length(inputfile, max_length, tsv_field)
+        .unwrap());
     generate_fm_index_from_bytes_with_known_bound(text, b'@', b'Z')
 }
 
 pub fn generate_reverse_fm_index(inputfile: &str, max_length: usize, tsv_field: usize) -> FMIndex<u8, RangeConverter<u8>, SuffixOrderSampledArray> {
-    let text = try_from_database_file_uncompressed_with_length(inputfile, max_length, tsv_field)
-        .unwrap()
-        .into_iter()
-        .rev()
-        .map(|x| match x {
-            b'-' => b'@',
-            b'$' => b'@',
-            _ => x.clone(),
-        })
-        .collect::<Vec<u8>>();
-    println!("Text = {:?}", text);
+    let text = convert_alphabet_and_reverse(try_from_database_file_uncompressed_with_length(inputfile, max_length, tsv_field).unwrap());
     generate_fm_index_from_bytes_with_known_bound(text, b'@', b'Z')
 }
 
@@ -68,12 +75,6 @@ pub fn generate_easy_fm_index() -> FMIndex<u8, RangeConverter<u8>, SuffixOrderSa
 
 pub fn load_easy_fm_index() -> FMIndex<u8, RangeConverter<u8>, SuffixOrderSampledArray> {
     load_index_postcard("swissprot.postcard")
-}
-
-
-pub fn eprint_and_exit(err: &str) -> ! {
-    eprintln!("{}", err);
-    std::process::exit(1);
 }
 
 pub fn load_suffix_array_file(file: &str) -> Result<SuffixArray, Box<dyn Error>> {
@@ -100,64 +101,6 @@ pub fn get_easy_sa_index() -> SparseSearcher {
     let proteins = Proteins::try_from_database_file("unipept-index-data/proteins.tsv").unwrap();
     let suffix_array = load_suffix_array_file(&"unipept-index-data/sa_sparse3_compressed.bin").unwrap();
     SparseSearcher::new(suffix_array, proteins)
-}
-pub fn test_correctness() {
-    fn array_eq_unordered(arr1: &Vec<u64>, arr2: &Vec<u64>) -> bool {
-        let mut arr1_copy = arr1.to_owned();
-        let mut arr2_copy = arr2.to_owned();
-
-        arr1_copy.sort();
-        arr2_copy.sort();
-
-        arr1_copy == arr2_copy
-    }
-    fn string_to_internal(index_rep: &str) -> String {
-        index_rep
-            .chars()
-            .map(|c| match c {
-                '-' => '@',
-                _ => c.clone(),
-            })
-            .collect()
-    }
-    let fm_index = generate_easy_fm_index();
-    let sa_searcher = get_easy_sa_index();
-
-    let patterns = read_benchmark_files("sihumi");
-
-    let mut total_matches = 0;
-    let mut total_mismatches = 0;
-
-    for collection in patterns {
-        println!("Testing patterns from file: {}", collection.name);
-
-        let mut matches = 0;
-        let mut mismatches = 0;
-
-        for s in collection.patterns.iter() {
-            let fm_r = fm_index.search_backward(string_to_internal(s)).locate();
-            let sa_search = sa_searcher.search_matching_suffixes(s.as_bytes(), 99999999, false, false);
-
-            let sa_r = match sa_search {
-                SearchAllSuffixesResult::SearchResult(r) => r,
-                SearchAllSuffixesResult::MaxMatches(r) => r,
-                SearchAllSuffixesResult::NoMatches => Vec::new(),
-            };
-
-            let sa_r = sa_r.into_iter().map(|n| n as _).collect();
-
-            if array_eq_unordered(&sa_r, &fm_r) {
-                matches += 1;
-            } else {
-                mismatches += 1;
-            }
-        }
-
-        println!("{} matches, {} inaccuracies found", matches, mismatches);
-        total_matches += matches;
-        total_mismatches += mismatches;
-    }
-    println!("Done! In total: {} matches, {} inaccuracies found", total_matches, total_mismatches);
 }
 
 pub fn test_memory_usage() {
@@ -196,8 +139,44 @@ pub fn load_index_postcard(index_file: &str) -> FMIndex<u8, RangeConverter<u8>, 
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+
     #[test]
-    fn it_works() {
-        assert_eq!(1, 1);
+    pub fn test_correctness() {
+
+        let fm_index = generate_easy_fm_index();
+        let sa_searcher = get_easy_sa_index();
+
+        let patterns = read_benchmark_files("sihumi");
+
+        for collection in patterns {
+
+            let mut matches = 0;
+            let mut mismatches = 0;
+
+            for s in collection.patterns.iter() {
+                let mut fm_r = fm_index.search_backward(s).locate();
+                let sa_search = sa_searcher.search_matching_suffixes(s.as_bytes(), 99999999, false, false);
+
+                let sa_r = match sa_search {
+                    SearchAllSuffixesResult::SearchResult(r) => r,
+                    SearchAllSuffixesResult::MaxMatches(r) => r,
+                    SearchAllSuffixesResult::NoMatches => Vec::new(),
+                };
+
+                let mut sa_r: Vec<u64> = sa_r.into_iter().map(|n| n as u64).collect();
+
+                fm_r.sort();
+                sa_r.sort();
+
+                if fm_r == sa_r {
+                    matches += 1;
+                } else {
+                    mismatches += 1;
+                }
+                assert_eq!(mismatches, 0);
+            }
+            assert_eq!(matches, collection.patterns.len());
+        }
     }
 }

@@ -9,7 +9,7 @@ pub struct BDFMSearch<'a> {
     pub backward_e: u64,
     pub forward_s: u64,
     pub forward_e: u64,
-    pub pattern: Vec<u8>, // TODO remove
+    // pub pattern: Vec<u8>, // TODO remove
 }
 
 impl<'a> BDFMSearch<'a> {
@@ -20,7 +20,7 @@ impl<'a> BDFMSearch<'a> {
             backward_e: index.normal_index.len(),
             forward_s: 0,
             forward_e: index.reverse_index.len(),
-            pattern: Vec::new(),
+            // pattern: Vec::new(),
         }
     }
 
@@ -60,14 +60,14 @@ impl<'a> BDFMSearch<'a> {
         e = index.lf_map2(char, e);
         let other_e = other_s + (e - s);
 
-        let mut pattern = Vec::new();
-        if forward {
-            pattern.extend_from_slice(self.pattern.as_slice());
-            pattern.push(char);
-        } else {
-            pattern.push(char);
-            pattern.extend_from_slice(self.pattern.as_slice());
-        }
+        // let mut pattern = Vec::new();
+        // if forward {
+        //     pattern.extend_from_slice(self.pattern.as_slice());
+        //     pattern.push(char);
+        // } else {
+        //     pattern.push(char);
+        //     pattern.extend_from_slice(self.pattern.as_slice());
+        // }
 
         BDFMSearch {
             index: self.index,
@@ -75,7 +75,7 @@ impl<'a> BDFMSearch<'a> {
             backward_e: if !forward { e } else { other_e },
             forward_s: if forward { s } else { other_s },
             forward_e: if forward { e } else { other_e },
-            pattern,
+            // pattern,
         }
     }
 
@@ -101,14 +101,14 @@ impl<'a> BDFMSearch<'a> {
             }
         }
 
-        if !forward {
-            pattern.reverse();
-            pattern.extend_from_slice(&self.pattern);
-        } else {
-            let saved_pattern = pattern.clone();
-            pattern = self.pattern.clone();
-            pattern.extend_from_slice(&saved_pattern);
-        }
+        // if !forward {
+        //     pattern.reverse();
+        //     pattern.extend_from_slice(&self.pattern);
+        // } else {
+        //     let saved_pattern = pattern.clone();
+        //     pattern = self.pattern.clone();
+        //     pattern.extend_from_slice(&saved_pattern);
+        // }
 
         BDFMSearch {
             index: self.index,
@@ -116,7 +116,7 @@ impl<'a> BDFMSearch<'a> {
             backward_e: if !forward { e } else { other_e },
             forward_s: if forward { s } else { other_s },
             forward_e: if forward { e } else { other_e },
-            pattern,
+            // pattern,
         }
     }
 

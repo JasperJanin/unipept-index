@@ -25,12 +25,10 @@ where
     C: Converter<u8>,
 {
     pub fn new<B: ArraySampler<S>>(mut text: Vec<u8>, converter: C, sampler: B) -> Self {
-        if !text[text.len() - 1].is_zero() {
+        if text.len() == 0 || !text[text.len() - 1].is_zero() {
             text.push(0);
         }
         let n = text.len();
-        
-        println!("Text in index: {:?}", text);
 
         let cs = sais::get_bucket_start_pos(&sais::count_chars(&text, &converter));
         let sa = sais::sais(&text, &converter);
@@ -42,7 +40,6 @@ where
                 bw[i] = converter.convert(text[k - 1]);
             }
         }
-        println!("bw: {:?}", bw);
         let bw = bw.into_iter().map(|c| c as u8).collect::<Vec<u8>>();
 
         let bw = WaveletMatrix::from_slice(&bw, (util::log2(converter.len() - 1) + 1) as u16);

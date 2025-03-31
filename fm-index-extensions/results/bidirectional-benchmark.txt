@@ -1,0 +1,496 @@
+Building index with size 1000...
+Index built
+BenchmarkResult {
+    name: "S03.txt",
+    input_pattern_count: 25000,
+    t_retrieve: 0.008377724,
+    match_count: 0,
+    distance: 0,
+    index_size: 1000,
+}
+BenchmarkResult {
+    name: "S03.txt",
+    input_pattern_count: 25000,
+    t_retrieve: 0.208530624,
+    match_count: 1,
+    distance: 1,
+    index_size: 1000,
+}
+BenchmarkResult {
+    name: "S03.txt",
+    input_pattern_count: 25000,
+    t_retrieve: 0.686445186,
+    match_count: 23,
+    distance: 2,
+    index_size: 1000,
+}
+Building index with size 2000...
+Index built
+BenchmarkResult {
+    name: "S03.txt",
+    input_pattern_count: 25000,
+    t_retrieve: 0.010000188,
+    match_count: 0,
+    distance: 0,
+    index_size: 2000,
+}
+BenchmarkResult {
+    name: "S03.txt",
+    input_pattern_count: 25000,
+    t_retrieve: 0.259294733,
+    match_count: 1,
+    distance: 1,
+    index_size: 2000,
+}
+BenchmarkResult {
+    name: "S03.txt",
+    input_pattern_count: 25000,
+    t_retrieve: 1.126150447,
+    match_count: 49,
+    distance: 2,
+    index_size: 2000,
+}
+Building index with size 4000...
+Index built
+BenchmarkResult {
+    name: "S03.txt",
+    input_pattern_count: 25000,
+    t_retrieve: 0.010152376,
+    match_count: 0,
+    distance: 0,
+    index_size: 4000,
+}
+BenchmarkResult {
+    name: "S03.txt",
+    input_pattern_count: 25000,
+    t_retrieve: 0.302719771,
+    match_count: 5,
+    distance: 1,
+    index_size: 4000,
+}
+BenchmarkResult {
+    name: "S03.txt",
+    input_pattern_count: 25000,
+    t_retrieve: 1.6901027100000001,
+    match_count: 168,
+    distance: 2,
+    index_size: 4000,
+}
+Building index with size 8000...
+Index built
+BenchmarkResult {
+    name: "S03.txt",
+    input_pattern_count: 25000,
+    t_retrieve: 0.011753333,
+    match_count: 0,
+    distance: 0,
+    index_size: 8000,
+}
+BenchmarkResult {
+    name: "S03.txt",
+    input_pattern_count: 25000,
+    t_retrieve: 0.358188582,
+    match_count: 6,
+    distance: 1,
+    index_size: 8000,
+}
+BenchmarkResult {
+    name: "S03.txt",
+    input_pattern_count: 25000,
+    t_retrieve: 2.594324806,
+    match_count: 360,
+    distance: 2,
+    index_size: 8000,
+}
+Building index with size 16000...
+Index built
+BenchmarkResult {
+    name: "S03.txt",
+    input_pattern_count: 25000,
+    t_retrieve: 0.013421439,
+    match_count: 0,
+    distance: 0,
+    index_size: 16000,
+}
+BenchmarkResult {
+    name: "S03.txt",
+    input_pattern_count: 25000,
+    t_retrieve: 0.429858151,
+    match_count: 15,
+    distance: 1,
+    index_size: 16000,
+}
+BenchmarkResult {
+    name: "S03.txt",
+    input_pattern_count: 25000,
+    t_retrieve: 3.778773329,
+    match_count: 750,
+    distance: 2,
+    index_size: 16000,
+}
+Building index with size 32000...
+Index built
+BenchmarkResult {
+    name: "S03.txt",
+    input_pattern_count: 25000,
+    t_retrieve: 0.012693771,
+    match_count: 0,
+    distance: 0,
+    index_size: 32000,
+}
+BenchmarkResult {
+    name: "S03.txt",
+    input_pattern_count: 25000,
+    t_retrieve: 0.486655027,
+    match_count: 21,
+    distance: 1,
+    index_size: 32000,
+}
+BenchmarkResult {
+    name: "S03.txt",
+    input_pattern_count: 25000,
+    t_retrieve: 5.3546669399999995,
+    match_count: 1546,
+    distance: 2,
+    index_size: 32000,
+}
+Building index with size 64000...
+Index built
+BenchmarkResult {
+    name: "S03.txt",
+    input_pattern_count: 25000,
+    t_retrieve: 0.013241113,
+    match_count: 1,
+    distance: 0,
+    index_size: 64000,
+}
+BenchmarkResult {
+    name: "S03.txt",
+    input_pattern_count: 25000,
+    t_retrieve: 0.534064096,
+    match_count: 49,
+    distance: 1,
+    index_size: 64000,
+}
+BenchmarkResult {
+    name: "S03.txt",
+    input_pattern_count: 25000,
+    t_retrieve: 7.002257117,
+    match_count: 3170,
+    distance: 2,
+    index_size: 64000,
+}
+Building index with size 128000...
+Index built
+BenchmarkResult {
+    name: "S03.txt",
+    input_pattern_count: 25000,
+    t_retrieve: 0.015025297,
+    match_count: 33,
+    distance: 0,
+    index_size: 128000,
+}
+BenchmarkResult {
+    name: "S03.txt",
+    input_pattern_count: 25000,
+    t_retrieve: 0.653219076,
+    match_count: 235,
+    distance: 1,
+    index_size: 128000,
+}
+BenchmarkResult {
+    name: "S03.txt",
+    input_pattern_count: 25000,
+    t_retrieve: 9.830573835,
+    match_count: 6909,
+    distance: 2,
+    index_size: 128000,
+}
+Building index with size 256000...
+Index built
+BenchmarkResult {
+    name: "S03.txt",
+    input_pattern_count: 25000,
+    t_retrieve: 0.017195931,
+    match_count: 95,
+    distance: 0,
+    index_size: 256000,
+}
+BenchmarkResult {
+    name: "S03.txt",
+    input_pattern_count: 25000,
+    t_retrieve: 0.774318841,
+    match_count: 513,
+    distance: 1,
+    index_size: 256000,
+}
+BenchmarkResult {
+    name: "S03.txt",
+    input_pattern_count: 25000,
+    t_retrieve: 13.657257001,
+    match_count: 14755,
+    distance: 2,
+    index_size: 256000,
+}
+Building index with size 512000...
+Index built
+BenchmarkResult {
+    name: "S03.txt",
+    input_pattern_count: 25000,
+    t_retrieve: 0.019127757,
+    match_count: 214,
+    distance: 0,
+    index_size: 512000,
+}
+BenchmarkResult {
+    name: "S03.txt",
+    input_pattern_count: 25000,
+    t_retrieve: 1.011660422,
+    match_count: 1067,
+    distance: 1,
+    index_size: 512000,
+}
+BenchmarkResult {
+    name: "S03.txt",
+    input_pattern_count: 25000,
+    t_retrieve: 20.485993068,
+    match_count: 30111,
+    distance: 2,
+    index_size: 512000,
+}
+Building index with size 1024000...
+Index built
+BenchmarkResult {
+    name: "S03.txt",
+    input_pattern_count: 25000,
+    t_retrieve: 0.021709835,
+    match_count: 564,
+    distance: 0,
+    index_size: 1024000,
+}
+BenchmarkResult {
+    name: "S03.txt",
+    input_pattern_count: 25000,
+    t_retrieve: 1.298668246,
+    match_count: 2671,
+    distance: 1,
+    index_size: 1024000,
+}
+BenchmarkResult {
+    name: "S03.txt",
+    input_pattern_count: 25000,
+    t_retrieve: 29.002190421,
+    match_count: 62149,
+    distance: 2,
+    index_size: 1024000,
+}
+Building index with size 2048000...
+Index built
+BenchmarkResult {
+    name: "S03.txt",
+    input_pattern_count: 25000,
+    t_retrieve: 0.028203899,
+    match_count: 1158,
+    distance: 0,
+    index_size: 2048000,
+}
+BenchmarkResult {
+    name: "S03.txt",
+    input_pattern_count: 25000,
+    t_retrieve: 1.727085693,
+    match_count: 5594,
+    distance: 1,
+    index_size: 2048000,
+}
+BenchmarkResult {
+    name: "S03.txt",
+    input_pattern_count: 25000,
+    t_retrieve: 40.378635601,
+    match_count: 125070,
+    distance: 2,
+    index_size: 2048000,
+}
+Building index with size 4096000...
+Index built
+BenchmarkResult {
+    name: "S03.txt",
+    input_pattern_count: 25000,
+    t_retrieve: 0.030647316,
+    match_count: 2449,
+    distance: 0,
+    index_size: 4096000,
+}
+BenchmarkResult {
+    name: "S03.txt",
+    input_pattern_count: 25000,
+    t_retrieve: 2.034965534,
+    match_count: 11631,
+    distance: 1,
+    index_size: 4096000,
+}
+BenchmarkResult {
+    name: "S03.txt",
+    input_pattern_count: 25000,
+    t_retrieve: 53.713205943,
+    match_count: 250843,
+    distance: 2,
+    index_size: 4096000,
+}
+Building index with size 8192000...
+Index built
+BenchmarkResult {
+    name: "S03.txt",
+    input_pattern_count: 25000,
+    t_retrieve: 0.042798236,
+    match_count: 3682,
+    distance: 0,
+    index_size: 8192000,
+}
+BenchmarkResult {
+    name: "S03.txt",
+    input_pattern_count: 25000,
+    t_retrieve: 2.749506041,
+    match_count: 19803,
+    distance: 1,
+    index_size: 8192000,
+}
+BenchmarkResult {
+    name: "S03.txt",
+    input_pattern_count: 25000,
+    t_retrieve: 81.686689453,
+    match_count: 493535,
+    distance: 2,
+    index_size: 8192000,
+}
+Building index with size 16384000...
+Index built
+BenchmarkResult {
+    name: "S03.txt",
+    input_pattern_count: 25000,
+    t_retrieve: 0.051616149,
+    match_count: 4272,
+    distance: 0,
+    index_size: 16384000,
+}
+BenchmarkResult {
+    name: "S03.txt",
+    input_pattern_count: 25000,
+    t_retrieve: 3.295246042,
+    match_count: 27536,
+    distance: 1,
+    index_size: 16384000,
+}
+BenchmarkResult {
+    name: "S03.txt",
+    input_pattern_count: 25000,
+    t_retrieve: 112.61847725,
+    match_count: 944478,
+    distance: 2,
+    index_size: 16384000,
+}
+Building index with size 32768000...
+Index built
+BenchmarkResult {
+    name: "S03.txt",
+    input_pattern_count: 25000,
+    t_retrieve: 0.054826062,
+    match_count: 4794,
+    distance: 0,
+    index_size: 32768000,
+}
+BenchmarkResult {
+    name: "S03.txt",
+    input_pattern_count: 25000,
+    t_retrieve: 3.975073856,
+    match_count: 40204,
+    distance: 1,
+    index_size: 32768000,
+}
+BenchmarkResult {
+    name: "S03.txt",
+    input_pattern_count: 25000,
+    t_retrieve: 153.37019448,
+    match_count: 1803781,
+    distance: 2,
+    index_size: 32768000,
+}
+Building index with size 65536000...
+Index built
+BenchmarkResult {
+    name: "S03.txt",
+    input_pattern_count: 25000,
+    t_retrieve: 0.064524048,
+    match_count: 5105,
+    distance: 0,
+    index_size: 65536000,
+}
+BenchmarkResult {
+    name: "S03.txt",
+    input_pattern_count: 25000,
+    t_retrieve: 4.929528255,
+    match_count: 63547,
+    distance: 1,
+    index_size: 65536000,
+}
+BenchmarkResult {
+    name: "S03.txt",
+    input_pattern_count: 25000,
+    t_retrieve: 204.920074607,
+    match_count: 3573483,
+    distance: 2,
+    index_size: 65536000,
+}
+Building index with size 131072000...
+Index built
+BenchmarkResult {
+    name: "S03.txt",
+    input_pattern_count: 25000,
+    t_retrieve: 0.156958439,
+    match_count: 22428,
+    distance: 0,
+    index_size: 131072000,
+}
+BenchmarkResult {
+    name: "S03.txt",
+    input_pattern_count: 25000,
+    t_retrieve: 8.249977365,
+    match_count: 194670,
+    distance: 1,
+    index_size: 131072000,
+}
+BenchmarkResult {
+    name: "S03.txt",
+    input_pattern_count: 25000,
+    t_retrieve: 295.688210266,
+    match_count: 7488532,
+    distance: 2,
+    index_size: 131072000,
+}
+Building index with size 262144000...
+Index built
+BenchmarkResult {
+    name: "S03.txt",
+    input_pattern_count: 25000,
+    t_retrieve: 0.252343896,
+    match_count: 45239,
+    distance: 0,
+    index_size: 262144000,
+}
+BenchmarkResult {
+    name: "S03.txt",
+    input_pattern_count: 25000,
+    t_retrieve: 9.854324909,
+    match_count: 358737,
+    distance: 1,
+    index_size: 262144000,
+}
+BenchmarkResult {
+    name: "S03.txt",
+    input_pattern_count: 25000,
+    t_retrieve: 365.226832018,
+    match_count: 12098897,
+    distance: 2,
+    index_size: 262144000,
+}
+Building index with size 524288000...
+Index built

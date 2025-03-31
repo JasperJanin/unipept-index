@@ -95,7 +95,7 @@ impl SearchScheme {
                 ],
             },
 
-            _ => unimplemented!(),
+            _ => unimplemented!("No search schemes provided for distance 5 and up"),
         }
     }
 }
