@@ -1,6 +1,7 @@
 use std::time::Instant;
 use fm_index_benchmarking::benchmarker::read_benchmark_files;
 use fm_searcher::bd_index::BidirectionalIndex;
+use fm_searcher::search_methods::shared::SearchMethod;
 
 fn benchmark() {
     #[derive(Debug)]
@@ -60,6 +61,28 @@ fn benchmark() {
     
 }
 
+fn execute_dyn_search() {
+    const DATA_FILE: &str = "fm-searcher/test-data/testproteins.tsv";
+
+    println!("Building index...");
+    // let mut index = BidirectionalIndex::from_file_max_length(DATA_FILE, size, 2);
+    let mut index = BidirectionalIndex::from_file(DATA_FILE, 2);
+    println!("Index built");
+    // let s = "ILKKRWVLELSMIAGIDPQSEGLARARAEGVY".to_string();
+    // KGVPNYFGAQRFGIGGSNLQGALRWAQTNTPVRDRNKRSFWLSAARSALFNQIVAERLKKAD
+    let s = "VLEYARHKRKLRLGALKGNAFTLVLREVSNRDDVEQRLIDICVKGVPNYFGAQRFGIGGSNLQGALRWAQTNTPVRDRNKRSFWLSAARSALFNQIVAERLKKADVNQVVDGDALQLAGRGSWFVATTEELAELRRVNDKVLMITAVLPGSGEWGTQREALAFEQAAVAEETELQTLLVREKVEAARRAMLLYPQQLSWNWWDDVTVEIRFWLPAGSFATSVVRELINTTGDYAHIAE@MIEFDNLTYLHGKPQGTGLLKANPE".to_string();
+    // let s = "VLEYARHKRKLRLGALKGNAFTLVLREVSNRDDVEQRLIDICVKGVPNYFGAQRFGIGGSNLQGALRWAQTNTPVRDRNKRSFWLSAARSALFNQIVAERLKKADVNQVVDGDALQLAGRGSWFVATTEELAELQRRVNDKVLMITAVLPGSGEWGTQREALAFEQAAVAEETELQTLLVREKVEAARRAMLLYPQQLSWNWWDDVTVEIRFWLPAGSFATSVVRELINTTGDYAHIAE@MIEFDNLTYLHGKPQGTGLLKANPE".to_string();
+    // let s = "VLEYARHKRKLRLGALKGNAFTLVLREVSNRDDVEQRLIDICVKGVPNYFGAQRFGIGGSNLQGALRWAQTNTPVRDRNKRSFWLSAARSALFNQIVAERLKKADVNQVVDGDALQLAGRGSWFVATTEELAELQRRVNDK".to_string();
+    // let s = "VLEYARHKRKLRLGDALKGNAFTCLVLREVSNRDD".to_string();
+    let mut res = index.find_approximate_matches_method(s, 1, SearchMethod::Dynamic);
+    res.sort();
+    for r in res {
+        println!("{:#?}", r);
+    }
+}
+
+
 fn main() {
-    benchmark();
+    // benchmark()
+    execute_dyn_search();
 }

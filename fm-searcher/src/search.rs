@@ -9,7 +9,6 @@ pub struct BDFMSearch<'a> {
     pub backward_e: u64,
     pub forward_s: u64,
     pub forward_e: u64,
-    // pub pattern: Vec<u8>, // TODO remove
 }
 
 impl<'a> BDFMSearch<'a> {

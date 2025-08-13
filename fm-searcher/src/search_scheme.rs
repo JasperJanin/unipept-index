@@ -1,4 +1,4 @@
-use crate::approximate_search::SearchSchemePass;
+use crate::search_methods::shared::SearchSchemePass;
 
 pub struct SearchScheme {
     pub(crate) pass_count: u32,
@@ -21,6 +21,27 @@ impl SearchScheme {
                     SearchSchemePass { order: vec![1, 0], lower: vec![0, 1], upper: vec![0, 1] },
                 ],
             },
+
+            // 2 => SearchScheme {
+            //     pass_count: 3,
+            //     passes: vec![
+            //         SearchSchemePass {
+            //             order: vec![0, 1, 2],
+            //             lower: vec![0, 0, 0],
+            //             upper: vec![0, 2, 2],
+            //         },
+            //         SearchSchemePass {
+            //             order: vec![2, 1, 0],
+            //             lower: vec![0, 0, 0],
+            //             upper: vec![0, 2, 2],
+            //         },
+            //         SearchSchemePass {
+            //             order: vec![1, 2, 0],
+            //             lower: vec![0, 0, 0],
+            //             upper: vec![0, 2, 2],
+            //         },
+            //     ],
+            // },
 
             2 => SearchScheme {
                 pass_count: 3,
@@ -65,7 +86,7 @@ impl SearchScheme {
             },
 
             4 => SearchScheme {
-                pass_count: 3,
+                pass_count: 5,
                 passes: vec![
                     SearchSchemePass {
                         order: vec![0, 1, 2, 3, 4, 5],
@@ -96,6 +117,22 @@ impl SearchScheme {
             },
 
             _ => unimplemented!("No search schemes provided for distance 5 and up"),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::search_scheme::SearchScheme;
+
+    #[test]
+    fn pass_sizes() {
+        for i in 1..5 {
+            let scheme = SearchScheme::new(i);
+            for pass in &scheme.passes {
+                assert_eq!(pass.order.len(), pass.lower.len());
+                assert_eq!(pass.order.len(), pass.upper.len());
+            }
         }
     }
 }

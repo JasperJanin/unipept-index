@@ -5,6 +5,7 @@ use fm_index::converter::RangeConverter;
 use fm_index::suffix_array::SuffixOrderSampledArray;
 use fm_index::FMIndex;
 use fm_index_benchmarking::{convert_alphabet, generate_fm_index, generate_fm_index_from_bytes_with_known_bound, generate_fm_index_from_bytes_without_known_bound, generate_reverse_fm_index};
+use crate::search_methods::shared::{SearchMethod};
 
 pub struct BidirectionalIndex {
     pub normal_index: FMIndex<u8, RangeConverter<u8>, SuffixOrderSampledArray>,
@@ -45,15 +46,19 @@ impl BidirectionalIndex {
         }
     }
 
-    pub fn search<'a>(&self, pattern: &str, forward: bool) -> BDFMSearch {
+    pub fn search(&self, pattern: &str, forward: bool) -> BDFMSearch {
         BDFMSearch::new(self).search(pattern, forward)
     }
 
-    fn find_approximate_matches_config(&self, pattern: String, distance: usize, max_stack_size: usize) -> Vec<u64> {
-        ApproximateSearch::search(self, pattern, distance, max_stack_size)
+    fn find_approximate_matches_config(&self, pattern: String, distance: usize, max_stack_size: usize, method: SearchMethod) -> Vec<u64> {
+        ApproximateSearch::search_with_method(self, pattern, distance, max_stack_size, method)
     }
 
     pub fn find_approximate_matches(&self, pattern: String, distance: usize) -> Vec<u64> {
-        self.find_approximate_matches_config(pattern, distance, Self::DEFAULT_STACK_SIZE)
+        self.find_approximate_matches_config(pattern, distance, Self::DEFAULT_STACK_SIZE, SearchMethod::Dynamic)
+    }
+
+    pub fn find_approximate_matches_method(&self, pattern: String, distance: usize, method: SearchMethod) -> Vec<u64> {
+        self.find_approximate_matches_config(pattern, distance, Self::DEFAULT_STACK_SIZE, method)
     }
 }
