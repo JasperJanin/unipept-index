@@ -5,5 +5,5 @@ edition = "2021"
 
 [dependencies]
 clap = { version = "4.5.31", features = ["derive"] }
-fm-index = { path = "../fm-index"}
-fm-index-benchmarking = { path = "../fm-index-extensions" }
+fm-index = { path = "../bifm-index/deps/fm-index" }
+fm-index-benchmarking = { path = "../bifm-index/src/fm-index-extensions" }

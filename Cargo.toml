@@ -8,5 +8,5 @@ members = [ "bitarray",
     "sa-index",
     "sa-mappings",
     "sa-server",
-    "fm-index-builder"
-, "fm-index-benchmarking", "fm-searcher"]
+    "bifm-index-builder"
+, "bifm-index/src/fm-index-extensions", "bifm-index"]

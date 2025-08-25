@@ -5,9 +5,14 @@ use std::error::Error;
 use std::fs;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
+use std::os::unix::raw::time_t;
 use std::path::PathBuf;
 use std::str::from_utf8;
-use std::time::Instant;
+use std::time::{Duration, Instant};
+use fm_index::{BackwardSearchIndex, FMIndex};
+use sa_index::sa_searcher::SearchAllSuffixesResult;
+use sa_index::SuffixArray;
+use crate::{generate_easy_fm_index, get_easy_sa_index};
 
 #[derive(Debug)]
 pub struct BenchmarkResult {
@@ -164,20 +169,76 @@ pub fn run_single_benchmark(
     run_benchmark(benchmark, index_content, dataset_option)
 }
 
-pub fn run_all_benchmarks(benchmark_dir: &str, dataset_option: &DatasetOption, tsv_index: usize) -> Vec<IndexBenchmark> {
+pub fn run_all_benchmarks(benchmark_dir: &str, dataset_option: &DatasetOption, tsv_index: usize) {
     let mut results = Vec::new();
 
     // load benchmarks
     let benchmark_strings = read_benchmark_files(benchmark_dir);
 
+    let mut bm = BuiltinFmIndex::new(0, false, 0, tsv_index);
+    results.push(run_single_benchmark(&mut bm, &benchmark_strings, dataset_option));
     let mut bm = BuiltinFmIndex::new(1, false, 0, tsv_index);
     results.push(run_single_benchmark(&mut bm, &benchmark_strings, dataset_option));
-
-    let mut bm = BuiltinFmIndex::new(32, false, 0, tsv_index);
+    let mut bm = BuiltinFmIndex::new(2, false, 0, tsv_index);
+    results.push(run_single_benchmark(&mut bm, &benchmark_strings, dataset_option));
+    let mut bm = BuiltinFmIndex::new(3, false, 0, tsv_index);
+    results.push(run_single_benchmark(&mut bm, &benchmark_strings, dataset_option));
+    let mut bm = BuiltinFmIndex::new(4, false, 0, tsv_index);
+    results.push(run_single_benchmark(&mut bm, &benchmark_strings, dataset_option));
+    let mut bm = BuiltinFmIndex::new(6, false, 0, tsv_index);
+    results.push(run_single_benchmark(&mut bm, &benchmark_strings, dataset_option));
+    let mut bm = BuiltinFmIndex::new(8, false, 0, tsv_index);
     results.push(run_single_benchmark(&mut bm, &benchmark_strings, dataset_option));
 
-    let mut bm = BuiltinFmIndex::new(128, false, 0, tsv_index);
-    results.push(run_single_benchmark(&mut bm, &benchmark_strings, dataset_option));
-
-    results
+    for r in results {
+        println!("\\multicolumn{{<SN>}}{{r|}}{{{} \\m{{SN=1}}}} & {} & {} & {} & {} \\\\", r.index, r.index_bytes, r.build_t, r.runs[0].t_count, r.runs[0].t_retrieve);
+    }
 }
+
+pub fn measure_ssa(benchmark_dir: &str) {
+    println!("Building suffix array index...");
+    let start = Instant::now();
+    let sa_searcher = get_easy_sa_index();
+    println!("Suffix array ready in {:?}, reading benchmark files...", Instant::now() - start);
+    let patterns = read_benchmark_files(benchmark_dir);
+    println!("Benchmark ready, executing benchmark for {} datasets...", patterns.len());
+    let mut sum = 0;
+    let mut patt_count = 0;
+
+    let start = Instant::now();
+    for collection in &patterns {
+        patt_count += collection.patterns.len();
+
+        for s in collection.patterns.iter() {
+            let sa_search = sa_searcher.search_matching_suffixes(s.as_bytes(), 99999999, false, false);
+
+            let sa_r = match sa_search {
+                SearchAllSuffixesResult::SearchResult(r) => r,
+                SearchAllSuffixesResult::MaxMatches(r) => r,
+                SearchAllSuffixesResult::NoMatches => Vec::new(),
+            };
+
+            let sa_r: Vec<u64> = sa_r.into_iter().map(|n| n as u64).collect();
+            sum += sa_r.len();
+        }
+    }
+    println!("SSA: {sum} occurrences found from {patt_count} patterns in {:?}", Instant::now() - start);
+    println!("Generating FM-index...");
+    let fm = generate_easy_fm_index();
+    println!("Done, benchmarking...");
+    sum = 0;
+    patt_count = 0;
+    let start = Instant::now();
+    for collection in &patterns {
+        patt_count += collection.patterns.len();
+
+        for s in collection.patterns.iter() {
+            let fm_search = fm.search_backward(s.as_bytes());
+            let results = fm_search.locate();
+            sum += results.len();
+        }
+    }
+    println!("FMI: {sum} occurrences found from {patt_count} patterns in {:?}", Instant::now() - start);
+    
+}
+    

@@ -23,7 +23,7 @@ pub mod index_instances;
 pub fn generate_fm_index_from_bytes_with_known_bound(text: Vec<u8>, min_char: u8, max_char: u8) -> FMIndex<u8, RangeConverter<u8>, SuffixOrderSampledArray> {
     let converter = RangeConverter::new(min_char, max_char);
     
-    let sampling_level = min(4, text.len() >> 10);
+    let sampling_level = min(3, text.len() >> 10);
     let sampler = SuffixOrderSampler::new().level(sampling_level);
     
     FMIndex::new(text, converter, sampler)

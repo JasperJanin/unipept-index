@@ -1,0 +1,13 @@
+[package]
+name = "fm-index-benchmarking"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+fm-index = { path = "../../deps/fm-index" }
+sa-mappings = { path = "../../../sa-mappings" }
+bytelines = "2.5.0"
+
+sa-index = { path = "../../../sa-index" }
+sa-compression = { path = "../../../sa-compression" }
+postcard = { version = "1.1.1", features = ["alloc"] }

@@ -1,11 +1,11 @@
-use crate::bd_index::BidirectionalIndex;
-use crate::search::BDFMSearch;
-use crate::search_methods::shared::SearchSchemePass;
+use crate::bd_index::BiFMIndex;
+use crate::search::shared::SearchSchemePass;
 use crate::search_scheme::SearchScheme;
 use fm_index::BackwardSearchIndex;
 use std::collections::HashSet;
 use std::str;
 use std::string::ToString;
+use crate::search::search::BDFMSearch;
 
 struct SearchStateEntry<'a> {
     search: BDFMSearch<'a>,
@@ -17,20 +17,19 @@ struct SearchStateEntry<'a> {
 }
 
 pub struct ApproximateStackSearch<'a> {
-    index: &'a BidirectionalIndex,
+    index: &'a BiFMIndex,
     parts: &'a Vec<String>,
     pattern_length: usize,
     scheme_pass: &'a SearchSchemePass,
     results: HashSet<u64>,
     stack: Vec<SearchStateEntry<'a>>,
-    max_stack_size: usize,
 }
 
 impl<'a> ApproximateStackSearch<'a> {
     // pub const ALPHABET: &'static [u8] = "ACDEFGHIKLMNOPQRSTUVWY".as_bytes();
     pub const ALPHABET: &'static [u8] = "@ABCDEFGHIJKLMNOPQRSTUVWXYZ".as_bytes(); // TODO verander naar echt alfabet ^
 
-    pub fn search(index: &BidirectionalIndex, pattern: String, dist: usize, max_stack_size: usize) -> Vec<u64> {
+    pub fn search(index: &BiFMIndex, pattern: String, dist: usize) -> Vec<u64> {
         if pattern.len() <= dist {
             panic!("Pattern length must be greater than edit distance");
         }
@@ -60,7 +59,6 @@ impl<'a> ApproximateStackSearch<'a> {
                 scheme_pass: &scheme.passes[i as usize],
                 results: HashSet::new(),
                 stack: Vec::new(),
-                max_stack_size,
             };
 
             search.stack.push(SearchStateEntry {

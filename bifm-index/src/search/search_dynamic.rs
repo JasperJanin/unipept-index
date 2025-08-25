@@ -1,14 +1,13 @@
 use std::collections::HashSet;
-use crate::bd_index::BidirectionalIndex;
-use crate::search_methods::shared::{BandedMatrix, SearchDepthDist, BiFMPosExt, PassDetails, Range, RangePair, SearchSchemePass, SearchDepthChar};
+use crate::bd_index::BiFMIndex;
+use crate::search::shared::{BandedMatrix, SearchDepthDist, BiFMPosExt, PassDetails, Range, RangePair, SearchSchemePass, SearchDepthChar};
 use crate::search_scheme::SearchScheme;
 use fm_index::BackwardSearchIndex;
-use crate::search::BDFMSearch;
-
+use crate::search::search::BDFMSearch;
 // todo acknowledgement
 
 pub struct ApproximateDynamicSearch<'i, 's> {
-    index: &'i BidirectionalIndex,
+    index: &'i BiFMIndex,
     pattern: &'s str,
     pattern_split: Vec<&'s str>,
     scheme: SearchScheme,
@@ -17,10 +16,10 @@ pub struct ApproximateDynamicSearch<'i, 's> {
 }
 
 impl<'i, 's> ApproximateDynamicSearch<'i, 's> {
-    // pub const ALPHABET: &'static [u8] = "ACDEFGHIKLMNOPQRSTUVWY".as_bytes();
-    pub const ALPHABET: &'static [u8] = "@ABCDEFGHIJKLMNOPQRSTUVWXYZ".as_bytes(); // TODO verander naar echt alfabet ^
+    pub const ALPHABET: &'static [u8] = "@ACDEFGHIKLMNOPQRSTUVWY".as_bytes();
+    // pub const ALPHABET: &'static [u8] = "@ABCDEFGHIJKLMNOPQRSTUVWXYZ".as_bytes(); // TODO verander naar echt alfabet ^
 
-    pub fn search(index: &BidirectionalIndex, pattern: String, dist: usize) -> Vec<u64> {
+    pub fn search(index: &BiFMIndex, pattern: String, dist: usize) -> Vec<u64> {
         if pattern.len() <= dist {
             panic!("Pattern length must be greater than edit distance");
         }

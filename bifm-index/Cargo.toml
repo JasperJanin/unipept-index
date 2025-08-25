@@ -1,0 +1,11 @@
+[package]
+name = "fm-searcher"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+fm-index-benchmarking = { path = "src/fm-index-extensions" }
+fm-index = { path = "deps/fm-index" }
+vers-vecs = { path = "deps/vers-vecs" }
+rand = "0.8.5"
+bytelines = "2.5.0"

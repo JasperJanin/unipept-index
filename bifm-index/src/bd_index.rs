@@ -1,29 +1,74 @@
-use crate::bd_index::BidirectionalIndex;
-use std::string::ToString;
-use crate::search_methods::search_dynamic::ApproximateDynamicSearch;
-use crate::search_methods::search_stack::ApproximateStackSearch;
-use crate::search_methods::shared::SearchMethod;
+use crate::search::search::BDFMSearch;
+use fm_index::converter::RangeConverter;
+use fm_index::suffix_array::SuffixOrderSampledArray;
+use fm_index::FMIndex;
+use fm_index_benchmarking::{convert_alphabet, generate_fm_index, generate_fm_index_from_bytes_with_known_bound, generate_fm_index_from_bytes_without_known_bound, generate_reverse_fm_index};
+use crate::search::search_dynamic::ApproximateDynamicSearch;
+use crate::search::search_stack::ApproximateStackSearch;
+use crate::search::shared::{SearchMethod};
 
-pub fn searchscheme_test() -> Vec<u64> {
-    let index = BidirectionalIndex::from_str("AABBCCDDEEDDCCBBAA");
-
-    let search_term = "CBB".to_string();
-
-    let results = index.find_approximate_matches(search_term, 1);
-    results
+pub struct BiFMIndex {
+    pub normal_index: FMIndex<u8, RangeConverter<u8>, SuffixOrderSampledArray>,
+    pub reverse_index: FMIndex<u8, RangeConverter<u8>, SuffixOrderSampledArray>,
 }
 
-pub struct ApproximateSearch {}
+impl BiFMIndex {
 
-impl ApproximateSearch {
-    pub fn search(index: &BidirectionalIndex, pattern: String, dist: usize, max_stack_size: usize) -> Vec<u64> {
-        ApproximateSearch::search_with_method(index, pattern, dist, max_stack_size, SearchMethod::Stack)
+    pub fn new(text: Vec<u8>, sparseness: u32) -> Self {
+        let mut rev = text.clone();
+        rev.reverse();
+        Self {
+            normal_index: generate_fm_index_from_bytes_without_known_bound(text),
+            reverse_index: generate_fm_index_from_bytes_without_known_bound(rev),
+        }
     }
     
-    pub fn search_with_method(index: &BidirectionalIndex, pattern: String, dist: usize, max_stack_size: usize, search_method: SearchMethod) -> Vec<u64> {
-        match search_method { 
-            SearchMethod::Stack => ApproximateStackSearch::search(index, pattern, dist, max_stack_size),
-            SearchMethod::Dynamic => ApproximateDynamicSearch::search(index, pattern, dist),
+    pub fn from_file_max_length(filename: &str, max_length: usize, tsv_field: usize) -> Self {
+        BiFMIndex {
+            normal_index: generate_fm_index(filename, max_length, tsv_field),
+            reverse_index: generate_reverse_fm_index(filename, max_length, tsv_field),
+        }
+    }
+    
+    pub fn from_file(filename: &str, tsv_field: usize) -> Self {
+        Self::from_file_max_length(filename, 0, tsv_field)
+    }
+
+    pub fn from_str(text: &str) -> Self {
+        
+        let text_normal = text.bytes().collect::<Vec<_>>();
+        let text_rev = text.bytes().rev().collect::<Vec<_>>();
+        
+        BiFMIndex {
+            normal_index: generate_fm_index_from_bytes_with_known_bound(convert_alphabet(text_normal), b'@', b'Z'),
+            reverse_index: generate_fm_index_from_bytes_with_known_bound(convert_alphabet(text_rev), b'@', b'Z')
+        }
+    }
+
+    pub fn search(&self, pattern: &str, forward: bool) -> BDFMSearch {
+        BDFMSearch::new(self).search(pattern, forward)
+    }
+
+    fn find_approximate_matches_config(&self, pattern: String, distance: usize, method: &SearchMethod) -> Vec<u64> {
+        self.search_with_method(pattern, distance, method)
+    }
+
+    pub fn find_approximate_matches(&self, pattern: String, distance: usize) -> Vec<u64> {
+        self.find_approximate_matches_config(pattern, distance, &SearchMethod::Dynamic)
+    }
+
+    pub fn find_approximate_matches_method(&self, pattern: String, distance: usize, method: &SearchMethod) -> Vec<u64> {
+        self.find_approximate_matches_config(pattern, distance, method)
+    }
+    
+    pub fn search_approximate(&self, pattern: String, dist: usize, max_stack_size: usize) -> Vec<u64> {
+        self.search_with_method(pattern, dist, &SearchMethod::Stack)
+    }
+
+    pub fn search_with_method(&self, pattern: String, dist: usize, search_method: &SearchMethod) -> Vec<u64> {
+        match search_method {
+            SearchMethod::Stack => ApproximateStackSearch::search(self, pattern, dist),
+            SearchMethod::Dynamic => ApproximateDynamicSearch::search(self, pattern, dist),
         }
     }
 }
@@ -31,15 +76,15 @@ impl ApproximateSearch {
 #[cfg(test)]
 mod tests {
     use fm_index_benchmarking::benchmarker::try_from_database_file_uncompressed_with_length;
-    use rand::random;
     use fm_index_benchmarking::convert_alphabet;
-    use crate::search_methods::search_stack::ApproximateStackSearch;
+    use crate::search::search_stack::ApproximateStackSearch;
     use super::*;
+    use crate::search::shared::LCG;
 
     #[test]
     fn short_text() {
         let text = "A";
-        let index = BidirectionalIndex::from_str(text);
+        let index = BiFMIndex::from_str(text);
         let search_string = "ACD";
 
         let results = index.find_approximate_matches(search_string.to_string(), 0);
@@ -54,7 +99,7 @@ mod tests {
     #[test]
     fn short_searches_1() {
         let text = "DANANA";
-        let index = BidirectionalIndex::from_str(text);
+        let index = BiFMIndex::from_str(text);
 
         let search_string = "ANA";
         let results = index.find_approximate_matches(search_string.to_string(), 0);
@@ -82,7 +127,7 @@ mod tests {
     #[test]
     fn short_searches_2() {
         let text = "GARFIELDTHELASTFATCAT";
-        let index = BidirectionalIndex::from_str(text);
+        let index = BiFMIndex::from_str(text);
 
         let search_string = "CAT";
         let results = index.find_approximate_matches(search_string.to_string(), 0);
@@ -115,20 +160,7 @@ mod tests {
         const MIN_PATTERN_LENGTH: usize = 16;
         const MAX_PATTERN_LENGTH: usize = 1024;
         const TEST_ITERATIONS: usize = 1000;
-        
-        struct LCG { // https://rosettacode.org/wiki/Linear_congruential_generator#Rust
-            state: u32
-        }
-        impl LCG {
-            fn get(&mut self, upper: usize) -> usize {
-                self.state = self.state.wrapping_mul(1_103_515_245).wrapping_add(12_345);
-                self.state %= 1 << 31;
-                self.state as usize % upper
-            }
-            fn from_seed(seed: u32) -> Self {
-                Self { state: seed }
-            }
-        }
+
 
         fn edit_pattern(pattern: &mut Vec<u8>, rng: &mut LCG) {
             let choice = rng.get(3);
@@ -143,14 +175,14 @@ mod tests {
                 _ => panic!("Impossible branch")
             };
         }
-        
+
         let mut rng = LCG::from_seed(0);
 
         let text = convert_alphabet(try_from_database_file_uncompressed_with_length("test-data/testproteins.tsv", 0, 2).unwrap());
-        let index = BidirectionalIndex::from_file("test-data/testproteins.tsv", 2);
+        let index = BiFMIndex::from_file("test-data/testproteins.tsv", 2);
 
         let text_len = text.len();
-        
+
         let mut right = 0;
         let mut wrong = 0;
 
@@ -158,20 +190,20 @@ mod tests {
         for i in 0..TEST_ITERATIONS {
             let pattern_length = rng.get(MAX_PATTERN_LENGTH - MIN_PATTERN_LENGTH) + MIN_PATTERN_LENGTH;
             let start_pos = rng.get(text_len - pattern_length);
-            
+
             let mut pattern = text[start_pos..start_pos + pattern_length].to_vec();
             let mut last_round_results = vec![start_pos as u64];
-            
+
             for dist in 0..3 {
                 if dist >> 5 > pattern_length {
                     break;
                 }
-                
+
                 let pattern_string = String::from_utf8(pattern.clone()).unwrap();
 
-                let this_round_results = index.find_approximate_matches_method(pattern_string, dist, SearchMethod::Stack);
+                let this_round_results = index.find_approximate_matches_method(pattern_string, dist, &SearchMethod::Stack);
                 assert!(this_round_results.len() > 0);
-                
+
                 for result in &last_round_results {
                     if !(this_round_results.contains(result) || this_round_results.contains(&(*result+1))) {
                         wrong += 1;
@@ -179,14 +211,14 @@ mod tests {
                         // break;
                     }
                     right += 1;
-                    
+
                     assert!(this_round_results.contains(&result) || this_round_results.contains(&(result+1)), "Editing search did not yield all expected values");
                 }
-                
+
                 edit_pattern(&mut pattern, &mut rng);
-                
+
                 last_round_results = this_round_results;
-                
+
             }
         }
         println!("Right: {right}\nWrong: {wrong}");

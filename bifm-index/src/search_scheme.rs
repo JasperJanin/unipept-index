@@ -1,4 +1,4 @@
-use crate::search_methods::shared::SearchSchemePass;
+use crate::search::shared::SearchSchemePass;
 
 pub struct SearchScheme {
     pub(crate) pass_count: u32,
@@ -21,27 +21,6 @@ impl SearchScheme {
                     SearchSchemePass { order: vec![1, 0], lower: vec![0, 1], upper: vec![0, 1] },
                 ],
             },
-
-            // 2 => SearchScheme {
-            //     pass_count: 3,
-            //     passes: vec![
-            //         SearchSchemePass {
-            //             order: vec![0, 1, 2],
-            //             lower: vec![0, 0, 0],
-            //             upper: vec![0, 2, 2],
-            //         },
-            //         SearchSchemePass {
-            //             order: vec![2, 1, 0],
-            //             lower: vec![0, 0, 0],
-            //             upper: vec![0, 2, 2],
-            //         },
-            //         SearchSchemePass {
-            //             order: vec![1, 2, 0],
-            //             lower: vec![0, 0, 0],
-            //             upper: vec![0, 2, 2],
-            //         },
-            //     ],
-            // },
 
             2 => SearchScheme {
                 pass_count: 3,
