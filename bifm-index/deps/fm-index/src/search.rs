@@ -1,6 +1,5 @@
-use crate::iter;
 use crate::iter::{BackwardIterableIndex, BackwardIterator, ForwardIterableIndex, ForwardIterator};
-use crate::suffix_array::IndexWithSA;
+use crate::suffix_array::{IndexWithSA, PartialArray, SuffixOrderSampledArray};
 
 pub trait BackwardSearchIndex: BackwardIterableIndex {
     fn search_backward<K>(&self, pattern: K) -> Search<Self>
@@ -71,6 +70,17 @@ where
 
     pub fn count(&self) -> u64 {
         self.e - self.s
+    }
+
+    pub fn locate_in_sa(&self, sa: &SuffixOrderSampledArray) -> Vec<u64> {
+
+
+        
+        let mut results: Vec<u64> = Vec::with_capacity((self.e - self.s) as usize);
+        for k in self.s..self.e {
+            results.push(sa.get(k).expect("BiFMSearch: Failed to locate suffix"));
+        }
+        results
     }
 }
 

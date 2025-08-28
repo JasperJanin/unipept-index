@@ -1,14 +1,14 @@
-use crate::bd_index::BiFMIndex;
+use crate::bifm_index::BiFMIndex;
 use crate::search::shared::SearchSchemePass;
 use crate::search_scheme::SearchScheme;
 use fm_index::BackwardSearchIndex;
 use std::collections::HashSet;
 use std::str;
 use std::string::ToString;
-use crate::search::search::BDFMSearch;
+use crate::search::search::BiFMSearch;
 
 struct SearchStateEntry<'a> {
-    search: BDFMSearch<'a>,
+    search: BiFMSearch<'a>,
     errors: u8,
     chars_taken: usize,
     scheme_part_index: usize,
@@ -17,7 +17,6 @@ struct SearchStateEntry<'a> {
 }
 
 pub struct ApproximateStackSearch<'a> {
-    index: &'a BiFMIndex,
     parts: &'a Vec<String>,
     pattern_length: usize,
     scheme_pass: &'a SearchSchemePass,
@@ -53,7 +52,6 @@ impl<'a> ApproximateStackSearch<'a> {
 
         for i in 0..scheme.pass_count {
             let mut search = ApproximateStackSearch {
-                index,
                 parts: &parts,
                 pattern_length: pattern.len(),
                 scheme_pass: &scheme.passes[i as usize],
@@ -62,7 +60,7 @@ impl<'a> ApproximateStackSearch<'a> {
             };
 
             search.stack.push(SearchStateEntry {
-                search: BDFMSearch::new(&index),
+                search: BiFMSearch::new(&index),
                 errors: 0,
                 chars_taken: 0,
                 scheme_part_index: 0,
@@ -110,7 +108,7 @@ impl<'a> ApproximateStackSearch<'a> {
         // errors allowed
         if state.errors < permitted_mistakes as u8 {
             for c in Self::ALPHABET {
-                let mut search = BDFMSearch {
+                let mut search = BiFMSearch {
                     index: state.search.index,
                     backward_s: state.search.backward_s,
                     backward_e: state.search.backward_e,
@@ -123,7 +121,7 @@ impl<'a> ApproximateStackSearch<'a> {
                 if search.count() > 0 {
                     // match/mismatch
                     self.stack.push(SearchStateEntry {
-                        search: BDFMSearch {
+                        search: BiFMSearch {
                             index: search.index,
                             backward_s: search.backward_s,
                             backward_e: search.backward_e,

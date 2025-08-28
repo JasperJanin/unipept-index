@@ -75,6 +75,9 @@ features = ["derive"]
 path = "../vers-vecs"
 features = ["serde"]
 
+[dependencies.libsais64-rs]
+path = "../../../libsais64-rs"
+
 [dev-dependencies.criterion]
 version = "0.5"
 

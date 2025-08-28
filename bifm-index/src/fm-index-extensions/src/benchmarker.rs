@@ -5,13 +5,11 @@ use std::error::Error;
 use std::fs;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
-use std::os::unix::raw::time_t;
 use std::path::PathBuf;
 use std::str::from_utf8;
-use std::time::{Duration, Instant};
-use fm_index::{BackwardSearchIndex, FMIndex};
+use std::time::{Instant};
+use fm_index::{BackwardSearchIndex};
 use sa_index::sa_searcher::SearchAllSuffixesResult;
-use sa_index::SuffixArray;
 use crate::{generate_easy_fm_index, get_easy_sa_index};
 
 #[derive(Debug)]

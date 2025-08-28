@@ -1,10 +1,30 @@
 use std::collections::HashSet;
-use crate::bd_index::BiFMIndex;
-use crate::search::shared::{BandedMatrix, SearchDepthDist, BiFMPosExt, PassDetails, Range, RangePair, SearchSchemePass, SearchDepthChar};
+use crate::bifm_index::BiFMIndex;
+use crate::search::shared::{SearchSchemePass};
 use crate::search_scheme::SearchScheme;
 use fm_index::BackwardSearchIndex;
-use crate::search::search::BDFMSearch;
+use crate::search::search::BiFMSearch;
+use crate::search::banded_matrix::BandedMatrix;
 // todo acknowledgement
+
+pub struct SearchDepthChar<'a> { // bifmext
+    pub search: BiFMSearch<'a>,
+    pub depth: u32,
+    pub char: u8,
+}
+
+pub struct SearchDepthDist<'a> { // bifmocc
+    pub search: BiFMSearch<'a>,
+    pub depth: u32,
+    pub dist: u32,
+}
+
+pub struct PassDetails {
+    pub order: Vec<u32>,
+    pub lower: Vec<u32>,
+    pub upper: Vec<u32>,
+    pub forward: Vec<bool>,
+}
 
 pub struct ApproximateDynamicSearch<'i, 's> {
     index: &'i BiFMIndex,
@@ -16,8 +36,8 @@ pub struct ApproximateDynamicSearch<'i, 's> {
 }
 
 impl<'i, 's> ApproximateDynamicSearch<'i, 's> {
-    pub const ALPHABET: &'static [u8] = "@ACDEFGHIKLMNOPQRSTUVWY".as_bytes();
-    // pub const ALPHABET: &'static [u8] = "@ABCDEFGHIJKLMNOPQRSTUVWXYZ".as_bytes(); // TODO verander naar echt alfabet ^
+    // pub const ALPHABET: &'static [u8] = "@ACDEFGHIKLMNOPQRSTUVWY".as_bytes();
+    pub const ALPHABET: &'static [u8] = "@ABCDEFGHIJKLMNOPQRSTUVWXYZ".as_bytes(); // TODO verander naar echt alfabet ^
 
     pub fn search(index: &BiFMIndex, pattern: String, dist: usize) -> Vec<u64> {
         if pattern.len() <= dist {
@@ -30,7 +50,7 @@ impl<'i, 's> ApproximateDynamicSearch<'i, 's> {
         }
 
         let scheme = SearchScheme::new(dist);
-        let mut search: ApproximateDynamicSearch = ApproximateDynamicSearch {
+        let search: ApproximateDynamicSearch = ApproximateDynamicSearch {
             index,
             pattern: pattern.as_str(),
             pattern_split: Vec::new(),
@@ -42,7 +62,7 @@ impl<'i, 's> ApproximateDynamicSearch<'i, 's> {
         search.perform_full_search()
     }
 
-    fn register_result(&mut self, result: BDFMSearch) {
+    fn register_result(&mut self, result: BiFMSearch) {
         result.locate().iter().for_each(|r| {
             self.results.insert(*r);
         });
@@ -59,7 +79,7 @@ impl<'i, 's> ApproximateDynamicSearch<'i, 's> {
         }
         self.pattern_split.push(&self.pattern[(part_amount-1)*avg_length as usize..]);
 
-        let mut exact_match_ranges: Vec<BDFMSearch> = Vec::new();
+        let mut exact_match_ranges: Vec<BiFMSearch> = Vec::new();
         self.forward = true;
 
         for part in &self.pattern_split {
@@ -86,10 +106,10 @@ impl<'i, 's> ApproximateDynamicSearch<'i, 's> {
         Vec::from_iter(self.results)
     }
 
-    fn perform_search_pass(&mut self, pass: PassDetails, exact_match_ranges: &Vec<BDFMSearch>) {
+    fn perform_search_pass(&mut self, pass: PassDetails, exact_match_ranges: &Vec<BiFMSearch>) {
         // get first part of search
         let s = &exact_match_ranges[pass.order[0] as usize];
-        let mut search_status = BDFMSearch {
+        let mut search_status = BiFMSearch {
             index: s.index,
             backward_s: s.backward_s,
             backward_e: s.backward_e,
@@ -103,8 +123,8 @@ impl<'i, 's> ApproximateDynamicSearch<'i, 's> {
         }
 
         let mut exact_matched_length = self.pattern_split[pass.order[0] as usize].len();
-
         let mut part_sequence_index = 1;
+
         // while no errors are allowed, keep doing exact matching
         while pass.upper[part_sequence_index] == 0 {
             let part_index = pass.order[part_sequence_index] as usize;
@@ -128,7 +148,7 @@ impl<'i, 's> ApproximateDynamicSearch<'i, 's> {
 
     fn recursive_approx_match(&mut self, pass: &PassDetails, start_occ: SearchDepthDist, part_sequence_index: usize) {
         // create banded matrix
-        let mut matrix = BandedMatrix::new(self.pattern_split[pass.order[part_sequence_index] as usize].len() as u32, (pass.upper[part_sequence_index] - start_occ.dist), start_occ.dist);
+        let mut matrix = BandedMatrix::new(self.pattern_split[pass.order[part_sequence_index] as usize].len() as u32, pass.upper[part_sequence_index] - start_occ.dist, start_occ.dist);
 
         let mut stack: Vec<SearchDepthChar> = Vec::new();
         stack.reserve(self.pattern.len() * Self::ALPHABET.len());
@@ -160,7 +180,7 @@ impl<'i, 's> ApproximateDynamicSearch<'i, 's> {
         }
     }
 
-    fn extend_fm_pos<'a>(&mut self, search: &BDFMSearch<'a>, depth: u32, stack: &mut Vec<SearchDepthChar<'a>>) {
+    fn extend_fm_pos<'a>(&mut self, search: &BiFMSearch<'a>, depth: u32, stack: &mut Vec<SearchDepthChar<'a>>) {
         for c in Self::ALPHABET {
             let base_search = search;
             let next_char_search = base_search.search_char(*c, self.forward);

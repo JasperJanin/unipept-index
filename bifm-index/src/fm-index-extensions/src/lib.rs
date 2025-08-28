@@ -5,11 +5,11 @@ use crate::benchmarker::{
 use crate::index_instances::builtin_fm_index::BuiltinFmIndex;
 use fm_index::converter::RangeConverter;
 use fm_index::suffix_array::{SuffixOrderSampledArray, SuffixOrderSampler};
-use fm_index::{BackwardSearchIndex, FMIndex};
+use fm_index::FMIndex;
 use postcard::{from_bytes, to_allocvec};
 use sa_compression::load_compressed_suffix_array;
 use sa_index::binary::load_suffix_array;
-use sa_index::sa_searcher::{SearchAllSuffixesResult, SparseSearcher};
+use sa_index::sa_searcher::{SparseSearcher};
 use sa_index::SuffixArray;
 use sa_mappings::proteins::Proteins;
 use std::error::Error;
@@ -20,19 +20,18 @@ use std::io::{BufReader, Read};
 pub mod benchmarker;
 pub mod index_instances;
 
-pub fn generate_fm_index_from_bytes_with_known_bound(text: Vec<u8>, min_char: u8, max_char: u8) -> FMIndex<u8, RangeConverter<u8>, SuffixOrderSampledArray> {
-    let converter = RangeConverter::new(min_char, max_char);
-    
-    let sampling_level = min(3, text.len() >> 10);
+pub fn get_fm_converter(text: &Vec<u8>) -> RangeConverter<u8> {
+    let min = *text.iter().min().unwrap();
+    let max = *text.iter().max().unwrap();
+    RangeConverter::new(min, max);
+    RangeConverter::new(b'@', b'Z')
+}
+
+pub fn generate_fm_index_from_bytes_with_converter(text: Vec<u8>, converter: RangeConverter<u8>, sampling_level: usize) -> FMIndex<u8, RangeConverter<u8>, SuffixOrderSampledArray> {
+    let sampling_level = min(sampling_level, text.len() >> 10);
     let sampler = SuffixOrderSampler::new().level(sampling_level);
     
     FMIndex::new(text, converter, sampler)
-}
-
-pub fn generate_fm_index_from_bytes_without_known_bound(text: Vec<u8>) -> FMIndex<u8, RangeConverter<u8>, SuffixOrderSampledArray> {
-    let min = *text.iter().min().unwrap();
-    let max = *text.iter().max().unwrap();
-    generate_fm_index_from_bytes_with_known_bound(text, min, max)
 }
 
 pub fn convert_alphabet(text: Vec<u8>) -> Vec<u8> {
@@ -58,19 +57,14 @@ pub fn convert_alphabet_and_reverse(text: Vec<u8>) -> Vec<u8> {
         .collect()
 }
 
-pub fn generate_fm_index(inputfile: &str, max_length: usize, tsv_field: usize) -> FMIndex<u8, RangeConverter<u8>, SuffixOrderSampledArray> {
+pub fn generate_fm_index(inputfile: &str, max_length: usize, tsv_field: usize, sampling_level: usize) -> FMIndex<u8, RangeConverter<u8>, SuffixOrderSampledArray> {
     let text = convert_alphabet(try_from_database_file_uncompressed_with_length(inputfile, max_length, tsv_field)
         .unwrap());
-    generate_fm_index_from_bytes_with_known_bound(text, b'@', b'Z')
-}
-
-pub fn generate_reverse_fm_index(inputfile: &str, max_length: usize, tsv_field: usize) -> FMIndex<u8, RangeConverter<u8>, SuffixOrderSampledArray> {
-    let text = convert_alphabet_and_reverse(try_from_database_file_uncompressed_with_length(inputfile, max_length, tsv_field).unwrap());
-    generate_fm_index_from_bytes_with_known_bound(text, b'@', b'Z')
+    generate_fm_index_from_bytes_with_converter(text, RangeConverter::new(b'@', b'Z'), sampling_level)
 }
 
 pub fn generate_easy_fm_index() -> FMIndex<u8, RangeConverter<u8>, SuffixOrderSampledArray> {
-    generate_fm_index("unipept-index-data/proteins.tsv", 0, 2)
+    generate_fm_index("unipept-index-data/proteins.tsv", 0, 2, 3)
 }
 
 pub fn load_easy_fm_index() -> FMIndex<u8, RangeConverter<u8>, SuffixOrderSampledArray> {
@@ -139,6 +133,8 @@ pub fn load_index_postcard(index_file: &str) -> FMIndex<u8, RangeConverter<u8>, 
 
 #[cfg(test)]
 mod tests {
+    use fm_index::BackwardSearchIndex;
+    use sa_index::sa_searcher::SearchAllSuffixesResult;
     use super::*;
 
     #[test]

@@ -7,5 +7,5 @@ edition = "2024"
 fm-index-benchmarking = { path = "src/fm-index-extensions" }
 fm-index = { path = "deps/fm-index" }
 vers-vecs = { path = "deps/vers-vecs" }
-rand = "0.8.5"
+libsais64-rs = { path = "../libsais64-rs" }
 bytelines = "2.5.0"

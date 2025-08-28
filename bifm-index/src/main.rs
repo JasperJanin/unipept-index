@@ -1,12 +1,14 @@
+use fm_searcher::search::shared::LCG;
 use std::fs::File;
 use std::io::BufReader;
 use std::str::from_utf8;
 use std::time::Instant;
-use fm_index_benchmarking::benchmarker::read_benchmark_files;
-use fm_searcher::bd_index::BiFMIndex;
+use fm_index_benchmarking::benchmarker::{read_benchmark_files};
+use fm_searcher::bifm_index::BiFMIndex;
 use fm_searcher::search::shared::SearchMethod;
 use bytelines::ByteLines;
 
+#[allow(dead_code)]
 fn benchmark() {
     #[derive(Debug)]
     struct BenchmarkResult {
@@ -26,7 +28,7 @@ fn benchmark() {
     let mut index = BiFMIndex::from_file_max_length(DATA_FILE, size, 2);
     println!("Index built");
     
-    while index.normal_index.len() != prev_index_size {
+    while index.len() != prev_index_size {
         let test_patterns = read_benchmark_files("benchmark_patterns");
 
 
@@ -40,7 +42,7 @@ fn benchmark() {
 
                 let mut match_count = 0;
                 for s in collection.patterns.iter() {
-                    match_count += index.find_approximate_matches(s.clone(), distance).len();
+                    match_count += index.search_approx(s.clone(), distance).len();
                 }
                 let t_retrieve = start_count.elapsed().as_secs_f64();
 
@@ -55,22 +57,21 @@ fn benchmark() {
             }
         }
         
-        prev_index_size = index.normal_index.len();
+        prev_index_size = index.len();
         size <<= 1;
         println!("Building index with size {}...", size);
         index = BiFMIndex::from_file_max_length(DATA_FILE, size, 2);
         println!("Index built");
     }
-    
-    
 }
 
+#[allow(dead_code)]
 fn execute_dyn_search() {
     const DATA_FILE: &str = "bifm-index/test-data/testproteins.tsv";
 
     println!("Building index...");
     // let mut index = BidirectionalIndex::from_file_max_length(DATA_FILE, size, 2);
-    let mut index = BiFMIndex::from_file(DATA_FILE, 2);
+    let index = BiFMIndex::from_file(DATA_FILE, 2);
     println!("Index built");
     // let s = "ILKKRWVLELSMIAGIDPQSEGLARARAEGVY".to_string();
     // KGVPNYFGAQRFGIGGSNLQGALRWAQTNTPVRDRNKRSFWLSAARSALFNQIVAERLKKAD
@@ -78,27 +79,12 @@ fn execute_dyn_search() {
     // let s = "VLEYARHKRKLRLGALKGNAFTLVLREVSNRDDVEQRLIDICVKGVPNYFGAQRFGIGGSNLQGALRWAQTNTPVRDRNKRSFWLSAARSALFNQIVAERLKKADVNQVVDGDALQLAGRGSWFVATTEELAELQRRVNDKVLMITAVLPGSGEWGTQREALAFEQAAVAEETELQTLLVREKVEAARRAMLLYPQQLSWNWWDDVTVEIRFWLPAGSFATSVVRELINTTGDYAHIAE@MIEFDNLTYLHGKPQGTGLLKANPE".to_string();
     // let s = "VLEYARHKRKLRLGALKGNAFTLVLREVSNRDDVEQRLIDICVKGVPNYFGAQRFGIGGSNLQGALRWAQTNTPVRDRNKRSFWLSAARSALFNQIVAERLKKADVNQVVDGDALQLAGRGSWFVATTEELAELQRRVNDK".to_string();
     // let s = "VLEYARHKRKLRLGDALKGNAFTCLVLREVSNRDD".to_string();
-    let mut res = index.find_approximate_matches_method(s, 1, &SearchMethod::Dynamic);
+    let mut res = index.search_approx_with_method(s, 1, &SearchMethod::Dynamic);
     res.sort();
     for r in res {
         println!("{:#?}", r);
     }
 }
-
-struct LCG { // https://rosettacode.org/wiki/Linear_congruential_generator#Rust
-    state: u32
-}
-impl LCG {
-    fn get(&mut self, upper: usize) -> usize {
-        self.state = self.state.wrapping_mul(1_103_515_245).wrapping_add(12_345);
-        self.state %= 1 << 31;
-        self.state as usize % upper
-    }
-    fn from_seed(seed: u32) -> Self {
-        Self { state: seed }
-    }
-}
-
 
 fn get_search_patterns_of_length(length: usize, amount: usize, tsv_file: &str, tsv_field: usize) -> Vec<String> {
     let mut patterns = Vec::new();
@@ -133,19 +119,21 @@ fn get_search_patterns_of_length(length: usize, amount: usize, tsv_file: &str, t
 }
 
 fn benchmark_indexes() {
+    // const DATA_FILE: &str = "bifm-index/test-data/testproteins.tsv";
     const DATA_FILE: &str = "unipept-index-data/proteins.tsv";
 
     println!("Building index...");
-    let mut index = BiFMIndex::from_file(DATA_FILE, 2);
-    println!("Index built in ...");
+    let start = Instant::now();
+    let index = BiFMIndex::from_file(DATA_FILE, 2);
+    println!("Index built in {:.2}s", start.elapsed().as_secs_f64());
 
-    for pattern_length in [10, 20, 25, 50, 100, 200, 300] {
+    for pattern_length in [10, 15, 20, 25, 30, 35, 40, 50, 60, 70, 80, 90, 100, 120, 140, 160, 180, 200, 240, 280, 320, 360, 400] {
         println!("p = {pattern_length}");
         let r = get_search_patterns_of_length(pattern_length, 1000, "bifm-index/test-data/testproteins.tsv", 2);
         for distance in 0..4 {
             if pattern_length / (distance+1) < distance {continue;}
             
-            for method in [SearchMethod::Dynamic] {
+            for method in [SearchMethod::Stack, SearchMethod::Dynamic] {
                 eprintln!("Querying index with distance {} and method {}", distance, if method == SearchMethod::Dynamic { "dynamic" } else { "stack" });
                 
                 let start_count = Instant::now();
@@ -153,7 +141,7 @@ fn benchmark_indexes() {
                 let mut match_count = 0;
         
                 for s in &r {
-                    match_count += index.find_approximate_matches_method(s.clone(), distance, &method).len();
+                    match_count += index.search_approx_with_method(s.clone(), distance, &method).len();
                 }
                 
                 let t_retrieve = start_count.elapsed().as_secs_f64();
@@ -161,7 +149,6 @@ fn benchmark_indexes() {
             }
         }
     }
-
 }
 
 

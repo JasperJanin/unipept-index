@@ -515,6 +515,7 @@ name = "fm-index"
 version = "0.2.0"
 dependencies = [
  "criterion",
+ "libsais64-rs",
  "num-traits",
  "rand 0.6.5",
  "serde",
@@ -531,6 +532,7 @@ dependencies = [
  "sa-compression",
  "sa-index",
  "sa-mappings",
+ "vers-vecs",
 ]
 
 [[package]]
@@ -549,7 +551,7 @@ dependencies = [
  "bytelines",
  "fm-index",
  "fm-index-benchmarking",
- "rand 0.8.5",
+ "libsais64-rs",
  "vers-vecs",
 ]
 

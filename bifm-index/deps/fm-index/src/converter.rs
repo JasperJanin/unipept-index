@@ -8,7 +8,7 @@ pub trait Converter<T> {
     fn len(&self) -> u64;
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Copy, Clone)]
 pub struct RangeConverter<T> {
     min: T,
     max: T,

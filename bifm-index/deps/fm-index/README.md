@@ -1,3 +1,9 @@
+# Important disclaimer
+*This distribution of FM-index was modified to fit to the scope of Unipept, by removing support for arbitrary data types.* \
+*This is not the complete implementation that is described below.* \
+*[Original repository by Koki Kato and Martijn Faassen](https://github.com/ajalab/fm-index)* \
+*[Rust docs page](https://docs.rs/fm-index/latest/fm_index/)*
+
 # fm-index
 
 [![Build Status](https://travis-ci.com/ajalab/fm-index.svg?branch=master)](https://travis-ci.org/ajalab/fm-index)

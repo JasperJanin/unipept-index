@@ -1,75 +1,66 @@
-use crate::search::search::BDFMSearch;
+use std::cmp::min;
+use crate::search::search::BiFMSearch;
 use fm_index::converter::RangeConverter;
-use fm_index::suffix_array::SuffixOrderSampledArray;
-use fm_index::FMIndex;
-use fm_index_benchmarking::{convert_alphabet, generate_fm_index, generate_fm_index_from_bytes_with_known_bound, generate_fm_index_from_bytes_without_known_bound, generate_reverse_fm_index};
+use fm_index::suffix_array::{NullSampler, SuffixOrderSampledArray, SuffixOrderSampler};
+use fm_index::{FMIndex};
+use fm_index_benchmarking::{convert_alphabet, get_fm_converter};
+use fm_index_benchmarking::benchmarker::try_from_database_file_uncompressed_with_length;
 use crate::search::search_dynamic::ApproximateDynamicSearch;
 use crate::search::search_stack::ApproximateStackSearch;
 use crate::search::shared::{SearchMethod};
 
 pub struct BiFMIndex {
     pub normal_index: FMIndex<u8, RangeConverter<u8>, SuffixOrderSampledArray>,
-    pub reverse_index: FMIndex<u8, RangeConverter<u8>, SuffixOrderSampledArray>,
+    pub reverse_index: FMIndex<u8, RangeConverter<u8>, ()>,
 }
 
 impl BiFMIndex {
 
-    pub fn new(text: Vec<u8>, sparseness: u32) -> Self {
-        let mut rev = text.clone();
-        rev.reverse();
+    pub fn new(text: Vec<u8>, sampling_level: usize) -> Self {
+        let sampling_level = min(sampling_level, text.len() >> 10);
+        let mut rev_text = text.clone();
+        rev_text.reverse();
+        
+        let converter = get_fm_converter(&text);
+
+        let sampler = SuffixOrderSampler::new().level(sampling_level);
+        
+        let normal_index = FMIndex::new(text, converter.clone(), sampler);
+        let reverse_index = FMIndex::new(rev_text, converter, NullSampler::new());
+        
         Self {
-            normal_index: generate_fm_index_from_bytes_without_known_bound(text),
-            reverse_index: generate_fm_index_from_bytes_without_known_bound(rev),
+            normal_index,
+            reverse_index,
         }
     }
     
-    pub fn from_file_max_length(filename: &str, max_length: usize, tsv_field: usize) -> Self {
-        BiFMIndex {
-            normal_index: generate_fm_index(filename, max_length, tsv_field),
-            reverse_index: generate_reverse_fm_index(filename, max_length, tsv_field),
-        }
+    pub fn from_file_max_length(filepath: &str, max_length: usize, tsv_field: usize) -> Self {
+        let text = convert_alphabet(try_from_database_file_uncompressed_with_length(filepath, max_length, tsv_field)
+        .unwrap());
+        Self::new(text, 3)
     }
     
     pub fn from_file(filename: &str, tsv_field: usize) -> Self {
         Self::from_file_max_length(filename, 0, tsv_field)
     }
 
-    pub fn from_str(text: &str) -> Self {
-        
-        let text_normal = text.bytes().collect::<Vec<_>>();
-        let text_rev = text.bytes().rev().collect::<Vec<_>>();
-        
-        BiFMIndex {
-            normal_index: generate_fm_index_from_bytes_with_known_bound(convert_alphabet(text_normal), b'@', b'Z'),
-            reverse_index: generate_fm_index_from_bytes_with_known_bound(convert_alphabet(text_rev), b'@', b'Z')
-        }
+    pub fn search(&self, pattern: &str, forward: bool) -> BiFMSearch {
+        BiFMSearch::new(self).search(pattern, forward)
     }
 
-    pub fn search(&self, pattern: &str, forward: bool) -> BDFMSearch {
-        BDFMSearch::new(self).search(pattern, forward)
+    pub fn search_approx(&self, pattern: String, distance: usize) -> Vec<u64> {
+        self.search_approx_with_method(pattern, distance, &SearchMethod::Dynamic)
     }
 
-    fn find_approximate_matches_config(&self, pattern: String, distance: usize, method: &SearchMethod) -> Vec<u64> {
-        self.search_with_method(pattern, distance, method)
-    }
-
-    pub fn find_approximate_matches(&self, pattern: String, distance: usize) -> Vec<u64> {
-        self.find_approximate_matches_config(pattern, distance, &SearchMethod::Dynamic)
-    }
-
-    pub fn find_approximate_matches_method(&self, pattern: String, distance: usize, method: &SearchMethod) -> Vec<u64> {
-        self.find_approximate_matches_config(pattern, distance, method)
-    }
-    
-    pub fn search_approximate(&self, pattern: String, dist: usize, max_stack_size: usize) -> Vec<u64> {
-        self.search_with_method(pattern, dist, &SearchMethod::Stack)
-    }
-
-    pub fn search_with_method(&self, pattern: String, dist: usize, search_method: &SearchMethod) -> Vec<u64> {
+    pub fn search_approx_with_method(&self, pattern: String, dist: usize, search_method: &SearchMethod) -> Vec<u64> {
         match search_method {
             SearchMethod::Stack => ApproximateStackSearch::search(self, pattern, dist),
             SearchMethod::Dynamic => ApproximateDynamicSearch::search(self, pattern, dist),
         }
+    }
+    
+    pub fn len(&self) -> u64{
+        self.normal_index.len()
     }
 }
 
@@ -77,21 +68,20 @@ impl BiFMIndex {
 mod tests {
     use fm_index_benchmarking::benchmarker::try_from_database_file_uncompressed_with_length;
     use fm_index_benchmarking::convert_alphabet;
-    use crate::search::search_stack::ApproximateStackSearch;
     use super::*;
     use crate::search::shared::LCG;
 
     #[test]
     fn short_text() {
         let text = "A";
-        let index = BiFMIndex::from_str(text);
+        let index = BiFMIndex::new(text.as_bytes().to_vec(), 0);
         let search_string = "ACD";
 
-        let results = index.find_approximate_matches(search_string.to_string(), 0);
+        let results = index.search_approx(search_string.to_string(), 0);
         assert_eq!(results.len(), 0);
-        let results = index.find_approximate_matches(search_string.to_string(), 1);
+        let results = index.search_approx(search_string.to_string(), 1);
         assert_eq!(results.len(), 0);
-        let results = index.find_approximate_matches(search_string.to_string(), 2);
+        let results = index.search_approx(search_string.to_string(), 2);
         assert_eq!(results.len(), 1);
         assert_eq!(results[0], 0);
     }
@@ -99,23 +89,23 @@ mod tests {
     #[test]
     fn short_searches_1() {
         let text = "DANANA";
-        let index = BiFMIndex::from_str(text);
+        let index = BiFMIndex::new(text.as_bytes().to_vec(), 0);
 
         let search_string = "ANA";
-        let results = index.find_approximate_matches(search_string.to_string(), 0);
+        let results = index.search_approx(search_string.to_string(), 0);
         assert_eq!(results.len(), 2);
         assert!(results.contains(&1));
         assert!(results.contains(&3));
 
         let search_string = "NANA".to_string();
-        let results = index.find_approximate_matches(search_string.to_string(), 1);
+        let results = index.search_approx(search_string.to_string(), 1);
         assert_eq!(results.len(), 4);
         assert!(results.contains(&0));
         assert!(results.contains(&1));
         assert!(results.contains(&2));
         assert!(results.contains(&3));
 
-        let results = index.find_approximate_matches(search_string.to_string(), 2);
+        let results = index.search_approx(search_string.to_string(), 2);
         assert_eq!(results.len(), 5);
         assert!(results.contains(&0));
         assert!(results.contains(&1));
@@ -127,14 +117,14 @@ mod tests {
     #[test]
     fn short_searches_2() {
         let text = "GARFIELDTHELASTFATCAT";
-        let index = BiFMIndex::from_str(text);
+        let index = BiFMIndex::new(text.as_bytes().to_vec(), 0);
 
         let search_string = "CAT";
-        let results = index.find_approximate_matches(search_string.to_string(), 0);
+        let results = index.search_approx(search_string.to_string(), 0);
         assert_eq!(results.len(), 1);
         assert!(results.contains(&18));
 
-        let results = index.find_approximate_matches(search_string.to_string(), 1);
+        let results = index.search_approx(search_string.to_string(), 1);
         assert_eq!(results.len(), 4);
         assert!(results.contains(&15));
         assert!(results.contains(&16));
@@ -142,7 +132,7 @@ mod tests {
         assert!(results.contains(&19));
 
         let search_string = "LAST";
-        let results = index.find_approximate_matches(search_string.to_string(), 2);
+        let results = index.search_approx(search_string.to_string(), 2);
         assert_eq!(results.len(), 9);
         assert!(results.contains(&6));
         assert!(results.contains(&10));
@@ -167,9 +157,9 @@ mod tests {
             let patt_len = pattern.len();
             match choice {
                 // substitution
-                0 => pattern[rng.get(patt_len)] = *ApproximateStackSearch::ALPHABET.iter().nth(rng.get(ApproximateStackSearch::ALPHABET.len())).unwrap(),
+                0 => pattern[rng.get(patt_len)] = *ApproximateDynamicSearch::ALPHABET.iter().nth(rng.get(ApproximateDynamicSearch::ALPHABET.len())).unwrap(),
                 // insertion
-                1 => pattern.insert(rng.get(patt_len), *ApproximateStackSearch::ALPHABET.iter().nth(rng.get(ApproximateStackSearch::ALPHABET.len())).unwrap()),
+                1 => pattern.insert(rng.get(patt_len), *ApproximateDynamicSearch::ALPHABET.iter().nth(rng.get(ApproximateDynamicSearch::ALPHABET.len())).unwrap()),
                 // deletion
                 2 => {pattern.remove(rng.get(patt_len));},
                 _ => panic!("Impossible branch")
@@ -201,7 +191,7 @@ mod tests {
 
                 let pattern_string = String::from_utf8(pattern.clone()).unwrap();
 
-                let this_round_results = index.find_approximate_matches_method(pattern_string, dist, &SearchMethod::Stack);
+                let this_round_results = index.search_approx_with_method(pattern_string, dist, &SearchMethod::Dynamic);
                 assert!(this_round_results.len() > 0);
 
                 for result in &last_round_results {

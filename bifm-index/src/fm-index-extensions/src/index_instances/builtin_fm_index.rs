@@ -19,21 +19,6 @@ impl BuiltinFmIndex {
         Self { index: None, optimize_alphabet, sa_sampling, input_length, tsv_index }
     }
 
-    fn internal_to_string(&self, index_rep: &str) -> String {
-        if self.optimize_alphabet {
-            index_rep
-                .chars()
-                .map(|c| match c {
-                    '@' => '-',
-                    _ => c.clone()
-                }
-                )
-                .collect()
-        } else {
-            index_rep.to_owned()
-        }
-    }
-
     fn string_to_internal(&self, index_rep: &str) -> String {
         if self.optimize_alphabet {
             index_rep

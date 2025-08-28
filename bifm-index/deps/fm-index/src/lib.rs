@@ -114,7 +114,7 @@ pub mod suffix_array;
 mod character;
 mod fm_index;
 mod iter;
-mod sais;
+pub mod sais;
 pub mod search;
 mod util;
 

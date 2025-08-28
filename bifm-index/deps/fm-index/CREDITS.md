@@ -5,3 +5,5 @@ Credits
 
 - Port to use Vers by [Martijn Faassen](mailto:faassen@startifact.com), with
   generous help from Cydhra (author of Vers).
+
+- Narrowing of scope to fit Unipept by Jasper Janin
