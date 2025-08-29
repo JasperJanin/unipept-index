@@ -1,7 +1,7 @@
-use crate::bifm_index::{BiFMIndex};
-use fm_index::converter::{RangeConverter};
-use fm_index::{BackwardIterableIndex, FMIndex};
+use crate::bifm_index::BiFMIndex;
+use fm_index::converter::RangeConverter;
 use fm_index::search::Search;
+use fm_index::{BackwardIterableIndex, FMIndex};
 
 pub struct BiFMSearch<'a> {
     pub index: &'a BiFMIndex,
@@ -23,22 +23,13 @@ impl<'a> BiFMSearch<'a> {
         }
     }
 
-    fn get_x<S>(
-        c: u8,
-        s: u64,
-        e: u64,
-        index: &FMIndex<u8, RangeConverter<u8>, S>,
-    ) -> u64 {
+    fn get_x<S>(c: u8, s: u64, e: u64, index: &FMIndex<u8, RangeConverter<u8>, S>) -> u64 {
         index.bw.rank_range_cumulative_u64_unchecked((s as usize)..(e as usize), c as u64) as u64
     }
- 
+
     #[inline(always)]
     pub fn search_char(&self, char: u8, forward: bool) -> Self {
-        if forward {
-            self.search_char_forward(char)
-        } else {
-            self.search_char_backward(char)
-        }
+        if forward { self.search_char_forward(char) } else { self.search_char_backward(char) }
     }
 
     pub fn search_char_forward(&self, char: u8) -> Self {
@@ -58,7 +49,6 @@ impl<'a> BiFMSearch<'a> {
         }
     }
     pub fn search_char_backward(&self, char: u8) -> Self {
-
         let index: &FMIndex<u8, RangeConverter<u8>, _> = &self.index.normal_index;
 
         let s = index.lf_map2(char, self.backward_s);
@@ -77,11 +67,7 @@ impl<'a> BiFMSearch<'a> {
 
     #[inline(always)]
     pub fn search(&self, pattern: &str, forward: bool) -> Self {
-        if forward {
-            self.search_forward(pattern)
-        } else {
-            self.search_backward(pattern)
-        }
+        if forward { self.search_forward(pattern) } else { self.search_backward(pattern) }
     }
 
     pub fn search_forward(&self, pattern: &str) -> Self {
@@ -150,29 +136,23 @@ impl<'a> BiFMSearch<'a> {
             index: &self.index.normal_index,
             s: self.backward_s,
             e: self.backward_e,
-            pattern: vec![]
+            pattern: vec![],
         };
         s.locate()
     }
 }
 
-
 #[cfg(test)]
 mod tests {
-    use std::time::{Instant};
-    use fm_index::converter::{Converter, RangeConverter};
-    use fm_index::{FMIndex};
-    use fm_index::suffix_array::{NullSampler, SuffixOrderSampler};
-    use fm_index_benchmarking::benchmarker::try_from_database_file_uncompressed_with_length;
     use crate::search::search::BiFMSearch;
     use crate::search::shared::LCG;
+    use fm_index::converter::{Converter, RangeConverter};
+    use fm_index::suffix_array::NullSampler;
+    use fm_index::FMIndex;
+    use fm_index_benchmarking::benchmarker::try_from_database_file_uncompressed_with_length;
+    use std::time::Instant;
 
-    fn get_x_control<S>(
-        c: u8,
-        s: u64,
-        e: u64,
-        index: &FMIndex<u8, RangeConverter<u8>, S>
-    ) -> u64 {
+    fn get_x_control<S>(c: u8, s: u64, e: u64, index: &FMIndex<u8, RangeConverter<u8>, S>) -> u64 {
         let mut x = 0;
 
         if ('@' as u8) > c || ('Z' as u8) < c {

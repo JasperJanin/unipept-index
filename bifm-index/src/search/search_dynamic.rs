@@ -1,19 +1,20 @@
-use std::collections::HashSet;
 use crate::bifm_index::BiFMIndex;
-use crate::search::shared::{SearchSchemePass};
-use crate::search_scheme::SearchScheme;
-use fm_index::BackwardSearchIndex;
-use crate::search::search::BiFMSearch;
 use crate::search::banded_matrix::BandedMatrix;
+use crate::search::search::BiFMSearch;
+use crate::search_scheme::{SearchScheme, SearchSchemePass};
+use fm_index::BackwardSearchIndex;
+use std::collections::HashSet;
 // todo acknowledgement
 
-pub struct SearchDepthChar<'a> { // bifmext
+pub struct SearchDepthChar<'a> {
+    // bifmext
     pub search: BiFMSearch<'a>,
     pub depth: u32,
     pub char: u8,
 }
 
-pub struct SearchDepthDist<'a> { // bifmocc
+pub struct SearchDepthDist<'a> {
+    // bifmocc
     pub search: BiFMSearch<'a>,
     pub depth: u32,
     pub dist: u32,
@@ -49,7 +50,7 @@ impl<'i, 's> ApproximateDynamicSearch<'i, 's> {
             return index.normal_index.search_backward(pattern).locate();
         }
 
-        let scheme = SearchScheme::new(dist);
+        let scheme = SearchScheme::get(dist);
         let search: ApproximateDynamicSearch = ApproximateDynamicSearch {
             index,
             pattern: pattern.as_str(),
@@ -69,21 +70,21 @@ impl<'i, 's> ApproximateDynamicSearch<'i, 's> {
     }
 
     fn perform_full_search(mut self) -> Vec<u64> {
-
         let part_amount = self.scheme.passes[0].upper.len();
 
         // split string
         let avg_length = self.pattern.len() as f64 / part_amount as f64;
-        for i in 0..part_amount-1 {
-            self.pattern_split.push(&self.pattern[i*avg_length as usize..(i+1)*avg_length as usize].as_ref());
+        for i in 0..part_amount - 1 {
+            self.pattern_split
+                .push(&self.pattern[i * avg_length as usize..(i + 1) * avg_length as usize].as_ref());
         }
-        self.pattern_split.push(&self.pattern[(part_amount-1)*avg_length as usize..]);
+        self.pattern_split.push(&self.pattern[(part_amount - 1) * avg_length as usize..]);
 
         let mut exact_match_ranges: Vec<BiFMSearch> = Vec::new();
         self.forward = true;
 
         for part in &self.pattern_split {
-            exact_match_ranges.push(self.index.search(*part, self.forward));
+            exact_match_ranges.push(self.index.search(*part));
         }
 
         let mut search_passes: Vec<PassDetails> = Vec::new();
@@ -131,7 +132,9 @@ impl<'i, 's> ApproximateDynamicSearch<'i, 's> {
             let part = self.pattern_split[part_index];
             self.forward = pass.forward[part_sequence_index]; // ordered by pass step, not part index
             search_status = search_status.search(part, self.forward);
-            if search_status.count() <= 0 { return; }
+            if search_status.count() <= 0 {
+                return;
+            }
             exact_matched_length += part.len();
             part_sequence_index += 1;
         }
@@ -148,7 +151,11 @@ impl<'i, 's> ApproximateDynamicSearch<'i, 's> {
 
     fn recursive_approx_match(&mut self, pass: &PassDetails, start_occ: SearchDepthDist, part_sequence_index: usize) {
         // create banded matrix
-        let mut matrix = BandedMatrix::new(self.pattern_split[pass.order[part_sequence_index] as usize].len() as u32, pass.upper[part_sequence_index] - start_occ.dist, start_occ.dist);
+        let mut matrix = BandedMatrix::new(
+            self.pattern_split[pass.order[part_sequence_index] as usize].len() as i32,
+            pass.upper[part_sequence_index] as i32 - start_occ.dist as i32,
+            start_occ.dist as i32,
+        );
 
         let mut stack: Vec<SearchDepthChar> = Vec::new();
         stack.reserve(self.pattern.len() * Self::ALPHABET.len());
@@ -159,19 +166,32 @@ impl<'i, 's> ApproximateDynamicSearch<'i, 's> {
         while !stack.is_empty() {
             let current_pos = stack.pop().unwrap();
 
-            let min_score = matrix.update_matrix_row(self.pattern_split[pass.order[part_sequence_index] as usize], current_pos.depth, current_pos.char, self.forward);
+            let min_score = matrix.update_matrix_row(
+                self.pattern_split[pass.order[part_sequence_index] as usize],
+                current_pos.depth as i32,
+                current_pos.char,
+                self.forward,
+            ) as u32;
 
-            if min_score <= pass.upper[part_sequence_index] && current_pos.depth + 1 <= matrix.get_row_count() {
+            if min_score <= pass.upper[part_sequence_index] && current_pos.depth + 1 <= matrix.get_row_count() as u32 {
                 self.extend_fm_pos(&current_pos.search, current_pos.depth, &mut stack);
-                
-                if matrix.in_final_col(current_pos.depth) {
-                    let last_col = matrix.get_final_col_value(current_pos.depth);
-                    
+
+                if matrix.in_final_col(current_pos.depth as i32) {
+                    let last_col = matrix.get_final_col_value(current_pos.depth as i32) as u32;
+
                     if last_col <= pass.upper[part_sequence_index] && last_col >= pass.lower[part_sequence_index] {
                         if part_sequence_index == pass.order.len() - 1 {
                             self.register_result(current_pos.search);
                         } else {
-                            self.recursive_approx_match(pass, SearchDepthDist {search: current_pos.search, depth: start_occ.depth + current_pos.depth, dist: last_col}, part_sequence_index + 1);
+                            self.recursive_approx_match(
+                                pass,
+                                SearchDepthDist {
+                                    search: current_pos.search,
+                                    depth: start_occ.depth + current_pos.depth,
+                                    dist: last_col,
+                                },
+                                part_sequence_index + 1,
+                            );
                             self.forward = pass.forward[part_sequence_index];
                         }
                     }
@@ -185,9 +205,8 @@ impl<'i, 's> ApproximateDynamicSearch<'i, 's> {
             let base_search = search;
             let next_char_search = base_search.search_char(*c, self.forward);
             if next_char_search.count() > 0 {
-                stack.push(SearchDepthChar {search: next_char_search, depth: depth+1, char: *c})
+                stack.push(SearchDepthChar { search: next_char_search, depth: depth + 1, char: *c })
             }
-
         }
     }
 

@@ -1,5 +1,5 @@
 [package]
-name = "fm-searcher"
+name = "bifm-index"
 version = "0.1.0"
 edition = "2024"
 
@@ -9,3 +9,5 @@ fm-index = { path = "deps/fm-index" }
 vers-vecs = { path = "deps/vers-vecs" }
 libsais64-rs = { path = "../libsais64-rs" }
 bytelines = "2.5.0"
+postcard = { version = "1.1.1", features = ["alloc"] }
+serde = { version = "1.0.197", features = ["derive"] }

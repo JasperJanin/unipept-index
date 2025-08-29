@@ -1,14 +1,26 @@
-use crate::search::shared::SearchSchemePass;
-
+/// A search scheme is a series of search passes to execute an approximate search query on
+/// a bidirectional FM-index.
+/// These optimal search schemes were proposed by Kianfar and Man
 pub struct SearchScheme {
-    pub(crate) pass_count: u32,
-    pub(crate) passes: Vec<SearchSchemePass>,
+    /// The amount of passes
+    pub pass_count: u32,
+    /// The details of each pass
+    pub passes: Vec<SearchSchemePass>,
+}
+
+/// A single search pass
+pub struct SearchSchemePass {
+    /// Order of the pattern fragments
+    pub order: Vec<u32>,
+    /// Lower bound of edit distance in each fragment (shown in chronological order, not pattern order)
+    pub lower: Vec<u32>,
+    /// Upper bound of edit distance in each fragmend (shown in chronological order, not pattern order)
+    pub upper: Vec<u32>,
 }
 
 impl SearchScheme {
-    pub fn new(dist: usize) -> Self {
+    pub fn get(dist: usize) -> Self {
         match dist {
-            // todo credit schemes (kianfar, man)
             0 => SearchScheme {
                 pass_count: 1,
                 passes: vec![SearchSchemePass { order: vec![0], lower: vec![0], upper: vec![0] }],
@@ -105,9 +117,10 @@ mod tests {
     use crate::search_scheme::SearchScheme;
 
     #[test]
+    /// Test that `order`, `lower` and `upper` vectors are of equal size
     fn pass_sizes() {
         for i in 1..5 {
-            let scheme = SearchScheme::new(i);
+            let scheme = SearchScheme::get(i);
             for pass in &scheme.passes {
                 assert_eq!(pass.order.len(), pass.lower.len());
                 assert_eq!(pass.order.len(), pass.upper.len());

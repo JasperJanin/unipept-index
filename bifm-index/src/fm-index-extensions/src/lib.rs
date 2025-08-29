@@ -1,4 +1,3 @@
-use std::cmp::min;
 use crate::benchmarker::{
     read_benchmark_files, run_single_benchmark, try_from_database_file_uncompressed_with_length, DatasetOption,
 };
@@ -9,12 +8,13 @@ use fm_index::FMIndex;
 use postcard::{from_bytes, to_allocvec};
 use sa_compression::load_compressed_suffix_array;
 use sa_index::binary::load_suffix_array;
-use sa_index::sa_searcher::{SparseSearcher};
+use sa_index::sa_searcher::SparseSearcher;
 use sa_index::SuffixArray;
 use sa_mappings::proteins::Proteins;
+use std::cmp::min;
 use std::error::Error;
-use std::fs::{read, File};
 use std::fs::write;
+use std::fs::{read, File};
 use std::io::{BufReader, Read};
 
 pub mod benchmarker;
@@ -27,16 +27,19 @@ pub fn get_fm_converter(text: &Vec<u8>) -> RangeConverter<u8> {
     RangeConverter::new(b'@', b'Z')
 }
 
-pub fn generate_fm_index_from_bytes_with_converter(text: Vec<u8>, converter: RangeConverter<u8>, sampling_level: usize) -> FMIndex<u8, RangeConverter<u8>, SuffixOrderSampledArray> {
+pub fn generate_fm_index_from_bytes_with_converter(
+    text: Vec<u8>,
+    converter: RangeConverter<u8>,
+    sampling_level: usize,
+) -> FMIndex<u8, RangeConverter<u8>, SuffixOrderSampledArray> {
     let sampling_level = min(sampling_level, text.len() >> 10);
     let sampler = SuffixOrderSampler::new().level(sampling_level);
-    
+
     FMIndex::new(text, converter, sampler)
 }
 
 pub fn convert_alphabet(text: Vec<u8>) -> Vec<u8> {
-    text
-        .into_iter()
+    text.into_iter()
         .map(|x| match x {
             b'-' => b'@',
             b'$' => b'@',
@@ -46,8 +49,7 @@ pub fn convert_alphabet(text: Vec<u8>) -> Vec<u8> {
 }
 
 pub fn convert_alphabet_and_reverse(text: Vec<u8>) -> Vec<u8> {
-    text
-        .into_iter()
+    text.into_iter()
         .map(|x| match x {
             b'-' => b'@',
             b'$' => b'@',
@@ -57,9 +59,14 @@ pub fn convert_alphabet_and_reverse(text: Vec<u8>) -> Vec<u8> {
         .collect()
 }
 
-pub fn generate_fm_index(inputfile: &str, max_length: usize, tsv_field: usize, sampling_level: usize) -> FMIndex<u8, RangeConverter<u8>, SuffixOrderSampledArray> {
-    let text = convert_alphabet(try_from_database_file_uncompressed_with_length(inputfile, max_length, tsv_field)
-        .unwrap());
+pub fn generate_fm_index(
+    inputfile: &str,
+    max_length: usize,
+    tsv_field: usize,
+    sampling_level: usize,
+) -> FMIndex<u8, RangeConverter<u8>, SuffixOrderSampledArray> {
+    let text =
+        convert_alphabet(try_from_database_file_uncompressed_with_length(inputfile, max_length, tsv_field).unwrap());
     generate_fm_index_from_bytes_with_converter(text, RangeConverter::new(b'@', b'Z'), sampling_level)
 }
 
@@ -133,20 +140,18 @@ pub fn load_index_postcard(index_file: &str) -> FMIndex<u8, RangeConverter<u8>, 
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use fm_index::BackwardSearchIndex;
     use sa_index::sa_searcher::SearchAllSuffixesResult;
-    use super::*;
 
     #[test]
     pub fn test_correctness() {
-
         let fm_index = generate_easy_fm_index();
         let sa_searcher = get_easy_sa_index();
 
         let patterns = read_benchmark_files("sihumi");
 
         for collection in patterns {
-
             let mut matches = 0;
             let mut mismatches = 0;
 

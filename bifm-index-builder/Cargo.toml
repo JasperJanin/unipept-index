@@ -1,9 +1,10 @@
 [package]
-name = "fm-index-builder"
+name = "bifm-index-builder"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
 clap = { version = "4.5.31", features = ["derive"] }
+bifm-index = { path = "../bifm-index" }
 fm-index = { path = "../bifm-index/deps/fm-index" }
 fm-index-benchmarking = { path = "../bifm-index/src/fm-index-extensions" }

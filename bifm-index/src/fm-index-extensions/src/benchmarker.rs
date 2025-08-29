@@ -1,5 +1,8 @@
 use super::index_instances::builtin_fm_index::BuiltinFmIndex;
+use crate::{generate_easy_fm_index, get_easy_sa_index};
 use bytelines::ByteLines;
+use fm_index::BackwardSearchIndex;
+use sa_index::sa_searcher::SearchAllSuffixesResult;
 use sa_mappings::proteins::{SEPARATION_CHARACTER, TERMINATION_CHARACTER};
 use std::error::Error;
 use std::fs;
@@ -7,10 +10,7 @@ use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
 use std::str::from_utf8;
-use std::time::{Instant};
-use fm_index::{BackwardSearchIndex};
-use sa_index::sa_searcher::SearchAllSuffixesResult;
-use crate::{generate_easy_fm_index, get_easy_sa_index};
+use std::time::Instant;
 
 #[derive(Debug)]
 pub struct BenchmarkResult {
@@ -45,7 +45,7 @@ pub enum DatasetOption {
 pub fn try_from_database_file_uncompressed_with_length(
     database_file: &str,
     max_length: usize,
-    tsv_field: usize
+    tsv_field: usize,
 ) -> Result<Vec<u8>, Box<dyn Error>> {
     let mut input_string: String = String::new();
 
@@ -189,7 +189,10 @@ pub fn run_all_benchmarks(benchmark_dir: &str, dataset_option: &DatasetOption, t
     results.push(run_single_benchmark(&mut bm, &benchmark_strings, dataset_option));
 
     for r in results {
-        println!("\\multicolumn{{<SN>}}{{r|}}{{{} \\m{{SN=1}}}} & {} & {} & {} & {} \\\\", r.index, r.index_bytes, r.build_t, r.runs[0].t_count, r.runs[0].t_retrieve);
+        println!(
+            "\\multicolumn{{<SN>}}{{r|}}{{{} \\m{{SN=1}}}} & {} & {} & {} & {} \\\\",
+            r.index, r.index_bytes, r.build_t, r.runs[0].t_count, r.runs[0].t_retrieve
+        );
     }
 }
 
@@ -237,6 +240,4 @@ pub fn measure_ssa(benchmark_dir: &str) {
         }
     }
     println!("FMI: {sum} occurrences found from {patt_count} patterns in {:?}", Instant::now() - start);
-    
 }
-    
