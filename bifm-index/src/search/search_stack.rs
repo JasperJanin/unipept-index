@@ -47,7 +47,7 @@ impl<'a> ApproximateStackSearch<'a> {
     /// * `index` - The BiFMIndex containing the text
     /// * `pattern` - The pattern to find approximate matches for
     /// * `dist` - The maximally allowed edit distance
-    pub fn search(index: &BiFMIndex, pattern: String, dist: usize) -> Vec<u64> {
+    pub fn search(index: &BiFMIndex, pattern: &String, dist: usize) -> Vec<u64> {
         if pattern.len() <= dist {
             panic!("Pattern length must be greater than edit distance");
         }

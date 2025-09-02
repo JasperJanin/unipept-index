@@ -7,6 +7,9 @@ use std::fs::File;
 use std::io::BufReader;
 use std::str::from_utf8;
 use std::time::Instant;
+use fm_index::BackwardSearchIndex;
+use fm_index_benchmarking::get_easy_sa_index;
+use sa_index::sa_searcher::SearchAllSuffixesResult;
 
 #[allow(dead_code)]
 fn benchmark() {
@@ -40,7 +43,7 @@ fn benchmark() {
 
                 let mut match_count = 0;
                 for s in collection.patterns.iter() {
-                    match_count += index.search_approx(s.clone(), distance).len();
+                    match_count += index.search_approx(s, distance).len();
                 }
                 let t_retrieve = start_count.elapsed().as_secs_f64();
 
@@ -126,9 +129,14 @@ fn benchmark_indexes() {
                 let start_count = Instant::now();
 
                 let mut match_count = 0;
-
-                for s in &r {
-                    match_count += index.search_approx_with_method(s.clone(), distance, &method).len();
+                if distance > 0 {
+                    for s in &r {
+                        match_count += index.search_approx_with_method(s, distance, &method).len();
+                    }
+                } else {
+                    for s in &r {
+                        match_count += index.normal_index.search_backward(s).locate().len();
+                    }
                 }
 
                 let t_retrieve = start_count.elapsed().as_secs_f64();
@@ -138,7 +146,33 @@ fn benchmark_indexes() {
     }
 }
 
+fn benchmark_ssa() {
+    let sa_searcher = get_easy_sa_index();
+    for pattern_length in
+        [10, 15, 20, 25, 30, 35, 40, 50, 60, 70, 80, 90, 100, 120, 140, 160, 180, 200, 240, 280, 320, 360, 400]
+    {
+        let r: Vec<Vec<u8>> = get_search_patterns_of_length(pattern_length, 1000, "bifm-index/test-data/testproteins.tsv", 2).iter().map(|s| Vec::from_iter(s.bytes())).collect();
+        let start_count = Instant::now();
+        let mut match_count = 0;
+
+        for s in &r {
+            let sa_search = sa_searcher.search_matching_suffixes(s, 999999, true, false);
+
+            let sa_r = match sa_search {
+                SearchAllSuffixesResult::SearchResult(r) => r,
+                SearchAllSuffixesResult::MaxMatches(r) => r,
+                SearchAllSuffixesResult::NoMatches => Vec::new(),
+            };
+            match_count += sa_r.len();
+        }
+
+        let t_retrieve = start_count.elapsed().as_secs_f64();
+        println!("SSA\t{pattern_length}\t0\t{t_retrieve}");
+    }
+}
+
 fn main() {
     // benchmark()
-    benchmark_indexes();
+    // benchmark_indexes();
+    benchmark_ssa()
 }

@@ -197,7 +197,7 @@ pub fn run_all_benchmarks(benchmark_dir: &str, dataset_option: &DatasetOption, t
 }
 
 pub fn measure_ssa(benchmark_dir: &str) {
-    println!("Building suffix array index...");
+    println!("Loading suffix array index...");
     let start = Instant::now();
     let sa_searcher = get_easy_sa_index();
     println!("Suffix array ready in {:?}, reading benchmark files...", Instant::now() - start);

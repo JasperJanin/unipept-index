@@ -11,3 +11,4 @@ libsais64-rs = { path = "../libsais64-rs" }
 bytelines = "2.5.0"
 postcard = { version = "1.1.1", features = ["alloc"] }
 serde = { version = "1.0.197", features = ["derive"] }
+sa-index = { path = "../sa-index" }

@@ -512,7 +512,7 @@ impl WaveletMatrix {
     /// [`rank_range_u64`]: WaveletMatrix::rank_range_u64
     #[must_use]
     pub fn rank_range_cumulative_u64_unchecked(&self, mut range: Range<usize>, symbol: u64) -> usize {
-        let mut sum = 0;
+        let mut cumulative_sum = 0;
         for (level, data) in self.data.iter().enumerate() {
             if (symbol >> ((self.bits_per_element() - 1) - level)) & 1 == 0 {
                 // left
@@ -520,12 +520,13 @@ impl WaveletMatrix {
                 range.end = data.rank0(range.end);
             } else {
                 // right
-                sum += data.rank0(range.end) - data.rank0(range.start);
+                cumulative_sum += range.end - range.start;
                 range.start = data.rank0 + data.rank1(range.start);
                 range.end = data.rank0 + data.rank1(range.end);
+                cumulative_sum -= range.end - range.start;
             }
         }
-        sum + range.end - range.start
+        cumulative_sum + range.end - range.start
     }
     
     /// Get the number of occurrences of the given `symbol` in the encoded sequence in the `range`.

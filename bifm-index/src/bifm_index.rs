@@ -139,7 +139,7 @@ impl BiFMIndex {
     /// A `BiFMSearch` object representing the search.
     /// Call `locate` on the object to retrieve the matches or extend the search in any direction
     /// by calling `search` on the object.
-    pub fn search_approx(&self, pattern: String, distance: usize) -> Vec<u64> {
+    pub fn search_approx(&self, pattern: &String, distance: usize) -> Vec<u64> {
         self.search_approx_with_method(pattern, distance, &SearchMethod::Dynamic)
     }
 
@@ -159,7 +159,7 @@ impl BiFMIndex {
     /// A `BiFMSearch` object representing the search.
     /// Call `locate` on the object to retrieve the matches or extend the search in any direction
     /// by calling `search` on the object.
-    pub fn search_approx_with_method(&self, pattern: String, dist: usize, search_method: &SearchMethod) -> Vec<u64> {
+    pub fn search_approx_with_method(&self, pattern: &String, dist: usize, search_method: &SearchMethod) -> Vec<u64> {
         match search_method {
             SearchMethod::Stack => ApproximateStackSearch::search(self, pattern, dist),
             SearchMethod::Dynamic => ApproximateDynamicSearch::search(self, pattern, dist),

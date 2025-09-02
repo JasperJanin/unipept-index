@@ -40,7 +40,7 @@ impl<'i, 's> ApproximateDynamicSearch<'i, 's> {
     // pub const ALPHABET: &'static [u8] = "@ACDEFGHIKLMNOPQRSTUVWY".as_bytes();
     pub const ALPHABET: &'static [u8] = "@ABCDEFGHIJKLMNOPQRSTUVWXYZ".as_bytes(); // TODO verander naar echt alfabet ^
 
-    pub fn search(index: &BiFMIndex, pattern: String, dist: usize) -> Vec<u64> {
+    pub fn search(index: &BiFMIndex, pattern: &String, dist: usize) -> Vec<u64> {
         if pattern.len() <= dist {
             panic!("Pattern length must be greater than edit distance");
         }

@@ -200,6 +200,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "bifm-index"
+version = "0.1.0"
+dependencies = [
+ "bytelines",
+ "fm-index",
+ "fm-index-benchmarking",
+ "libsais64-rs",
+ "postcard",
+ "sa-index",
+ "serde",
+ "vers-vecs",
+]
+
+[[package]]
+name = "bifm-index-builder"
+version = "0.1.0"
+dependencies = [
+ "bifm-index",
+ "clap",
+ "fm-index",
+ "fm-index-benchmarking",
+]
+
+[[package]]
 name = "bindgen"
 version = "0.69.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -532,27 +556,6 @@ dependencies = [
  "sa-compression",
  "sa-index",
  "sa-mappings",
- "vers-vecs",
-]
-
-[[package]]
-name = "fm-index-builder"
-version = "0.1.0"
-dependencies = [
- "clap",
- "fm-index",
- "fm-index-benchmarking",
-]
-
-[[package]]
-name = "fm-searcher"
-version = "0.1.0"
-dependencies = [
- "bytelines",
- "fm-index",
- "fm-index-benchmarking",
- "libsais64-rs",
- "vers-vecs",
 ]
 
 [[package]]
